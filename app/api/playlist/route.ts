@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { captionImage, CaptionError, fetchImage, type Caption } from "@/lib/caption";
+import { captionWithHuggingFace, CaptionError, fetchImage, hfCaptionEnabled } from "@/lib/caption";
 import { claudeEnabled, curatePlaylist, mergeCandidates, type CuratedPlaylist } from "@/lib/curate";
-import { extractKeywords, toKeywords, type Keyword } from "@/lib/keywords";
 import { recommendSongs } from "@/lib/recommend";
 import { deezerSearch, geniusEnabled, geniusSearch, lastfmEnabled, lastfmTagTracks } from "@/lib/sources/music-apis";
 import { tiktokEnabled, tiktokSounds } from "@/lib/sources/tiktok";
 import type { Candidate, Source } from "@/lib/sources/types";
 import { findTrack, spotifyEnabled, type SpotifyTrack } from "@/lib/spotify";
+import { CLAUDE_IMAGE_TYPES, planFromText, understandWithClaude, type SearchPlan, type UnderstandInput } from "@/lib/understand";
 
 export const runtime = "nodejs";
 // TikTok scraping alone can take over a minute.
@@ -26,28 +26,46 @@ export type PlaylistSong = {
 
 // The response is newline-delimited JSON, one event per line.
 export type PlaylistEvent =
-  | { type: "analysis"; caption: string; keywords: string[] }
+  | { type: "analysis"; caption: string; context?: string; keywords: string[] }
   | { type: "status"; message: string }
   | { type: "playlist"; name: string; description: string; songs: PlaylistSong[]; sources: Partial<Record<Source, number>>; notes: string[] }
   | { type: "error"; error: string };
 
-async function sceneFromBody(body: Body): Promise<Caption> {
+async function readInput(body: Body): Promise<UnderstandInput> {
   if (body.mode === "text") {
     const text = (body.text ?? "").trim().slice(0, 2000);
     if (!text) throw new CaptionError("Type something first.", 400);
-    return { caption: text };
+    return { text };
   }
   if (body.imageData) {
     const match = /^data:(image\/[\w.+-]+);base64,(.+)$/.exec(body.imageData);
     if (!match) throw new CaptionError("Unsupported image.", 400);
-    const buf = Buffer.from(match[2], "base64");
-    return captionImage(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), match[1]);
+    return { image: { base64: match[2], type: match[1] } };
   }
   if (body.imageUrl) {
     const { bytes, type } = await fetchImage(body.imageUrl);
-    return captionImage(bytes, type);
+    return { image: { base64: Buffer.from(bytes).toString("base64"), type } };
   }
   throw new CaptionError("Choose a photo first.", 400);
+}
+
+// Claude builds a context-aware plan; without it (or if it fails), TextRank
+// keywords from the text or from a Hugging Face caption of the photo.
+async function buildPlan(input: UnderstandInput, notes: string[]): Promise<SearchPlan> {
+  if ("image" in input && !(CLAUDE_IMAGE_TYPES as readonly string[]).includes(input.image.type)) {
+    throw new CaptionError("Use a JPEG, PNG, GIF or WebP image.", 400);
+  }
+  if (claudeEnabled()) {
+    try {
+      return await understandWithClaude(input);
+    } catch (err) {
+      console.error("Claude search plan failed:", err);
+      notes.push("Claude couldn't interpret this, so a simpler keyword search was used.");
+    }
+  }
+  if ("text" in input) return planFromText(input.text);
+  if (!hfCaptionEnabled()) throw new CaptionError("Photo captioning isn't available right now. Try Text mode.", 503);
+  return planFromText(await captionWithHuggingFace(input.image.base64, input.image.type));
 }
 
 // One list per keyword -> a single list that alternates between keywords.
@@ -59,10 +77,10 @@ function interleave(lists: Candidate[][]): Candidate[] {
   return out;
 }
 
-// Run every configured source at once; a failing source is noted, not fatal.
-async function gatherCandidates(stems: Keyword[], notes: string[]): Promise<Candidate[]> {
-  const keywords = stems.map((k) => k.word);
-  const lyrics = recommendSongs(stems, 10).map<Candidate>((s) => ({
+// Run every configured source at once, each with its part of the plan;
+// a failing source is noted, not fatal.
+async function gatherCandidates(plan: SearchPlan, notes: string[]): Promise<Candidate[]> {
+  const lyrics = recommendSongs(plan.lyricKeywords, 10).map<Candidate>((s) => ({
     title: s.title,
     artist: s.artist,
     source: "lyrics",
@@ -70,19 +88,20 @@ async function gatherCandidates(stems: Keyword[], notes: string[]): Promise<Cand
   }));
   const jobs: [string, Promise<Candidate[]>][] = [
     ["Lyrics", Promise.resolve(lyrics)],
-    ["Deezer", Promise.all(keywords.map(deezerSearch)).then(interleave)],
+    ["Deezer", Promise.all(plan.searchTerms.map(deezerSearch)).then(interleave)],
   ];
-  if (tiktokEnabled()) jobs.push(["TikTok", tiktokSounds(keywords)]);
-  if (lastfmEnabled()) jobs.push(["Last.fm", Promise.all(keywords.map(lastfmTagTracks)).then(interleave)]);
-  if (geniusEnabled()) jobs.push(["Genius", Promise.all(keywords.map(geniusSearch)).then(interleave)]);
+  if (tiktokEnabled()) jobs.push(["TikTok", tiktokSounds(plan.hashtags)]);
+  if (lastfmEnabled()) jobs.push(["Last.fm", Promise.all(plan.tags.map(lastfmTagTracks)).then(interleave)]);
+  if (geniusEnabled()) jobs.push(["Genius", Promise.all(plan.searchTerms.map(geniusSearch)).then(interleave)]);
 
   const results = await Promise.allSettled(jobs.map(([, job]) => job));
-  return results.flatMap((result, i) => {
+  const found = results.flatMap((result, i) => {
     if (result.status === "fulfilled") return result.value;
     console.error(`${jobs[i][0]} source failed:`, result.reason);
     notes.push(`${jobs[i][0]} was unavailable this time.`);
     return [];
   });
+  return [...plan.seedSongs, ...found];
 }
 
 async function resolveOnSpotify(playlist: CuratedPlaylist, notes: string[]): Promise<PlaylistSong[]> {
@@ -115,25 +134,23 @@ export async function POST(request: Request) {
     async start(controller) {
       const send = (event: PlaylistEvent) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
       try {
-        const { caption: scene, keywords: chosen } = await sceneFromBody(body);
-        const stems = chosen ? toKeywords(chosen) : extractKeywords(scene);
-        const keywords = stems.map((k) => k.word);
-        send({ type: "analysis", caption: scene, keywords });
+        const notes: string[] = [];
+        const plan = await buildPlan(await readInput(body), notes);
+        send({ type: "analysis", caption: plan.scene, context: plan.context, keywords: plan.hashtags });
 
         send({ type: "status", message: tiktokEnabled() ? "Digging through TikTok hashtags…" : "Searching music libraries…" });
-        const notes: string[] = [];
-        const candidates = await gatherCandidates(stems, notes);
+        const candidates = await gatherCandidates(plan, notes);
 
         let playlist: CuratedPlaylist;
         if (claudeEnabled()) {
           send({ type: "status", message: "Claude is picking the best songs…" });
-          playlist = await curatePlaylist(scene, keywords, candidates).catch((err) => {
+          playlist = await curatePlaylist(plan, candidates).catch((err) => {
             console.error("Claude curation failed:", err);
             notes.push("Claude was unavailable, so songs were mixed automatically.");
-            return mergeCandidates(candidates, scene);
+            return mergeCandidates(candidates, plan.scene);
           });
         } else {
-          playlist = mergeCandidates(candidates, scene);
+          playlist = mergeCandidates(candidates, plan.scene);
         }
 
         send({ type: "status", message: "Finding songs on Spotify…" });
