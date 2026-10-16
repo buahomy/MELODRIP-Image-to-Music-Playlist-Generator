@@ -1,5 +1,16 @@
-title: Melodrip: Image-to-Music-Playlist-Generator
-description: Machine Learning Project
+title: "Melodrip: Image-to-Music Playlist Generator"
+description: "Turn a photo or a few words into a playlist. Live app: https://melodrip.vercel.app"
 show_downloads: false
-google_analytics:
 theme: jekyll-theme-slate
+# The GitHub Pages site only renders the README; skip the app code and data.
+exclude:
+  - app
+  - lib
+  - data
+  - scripts
+  - legacy/Melodrip.ipynb
+  - spotify_millsongdata.csv
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - next.config.ts
