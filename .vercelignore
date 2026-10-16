@@ -1,0 +1,9 @@
+# The raw CSV is only needed to rebuild data/lyrics-index.json locally.
+spotify_millsongdata.csv
+Melodrip.ipynb
+Figure *.png
+Melodrip.py
+scripts/
+
+# Local secrets: production values are set in Vercel.
+.env*.local

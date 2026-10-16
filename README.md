@@ -1,10 +1,138 @@
 # Melodrip
-## Image to Music Playlist Generator
-## Authors: Pure and Saki
+### Turn a photo or a few words into a playlist.
+**Authors:** Pure and Saki · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
-## [Try it out here](https://melodrip.streamlit.app/) 
-## [Link to Colab](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
+Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now a mobile web app built to feel like a native iPhone app. Claude describes your photo, the description becomes hashtags, the app gathers songs from TikTok and several music services, and has Claude pick a playlist you can save to Spotify.
 
+## Features
+- **Photo or Text toggle.** Caption a photo (taken with the camera, picked from the library, or pasted as a link), or skip captioning and type a scene or mood directly.
+- **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it.
+- **Save to Spotify** creates the playlist in your Spotify account. **Copy Spotify Links** works for anyone: paste the links into a Spotify playlist on desktop.
+- **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon and follows light and dark mode.
+
+## How it works
+
+```mermaid
+flowchart LR
+  A[Photo] -->|Claude vision caption| C[Scene text]
+  B[Typed text] --> C
+  C -->|Claude hashtags or TextRank| K[Keywords / hashtags]
+  K --> T[TikTok hashtag sounds]
+  K --> L[Last.fm tags]
+  K --> G[Genius search]
+  K --> D[Deezer search]
+  K --> X[Lyrics TF-IDF index]
+  T & L & G & D & X --> CL[Claude picks ~20 songs]
+  CL --> S[Spotify lookup]
+  S --> P[Playlist → Save to Spotify / Copy links]
+```
+
+1. **Describe the scene.** Claude Sonnet 5.5 writes a short caption for the photo: the subject, what's happening, the setting and the mood ([lib/caption.ts](lib/caption.ts)). If no Anthropic key is set, a vision model on Hugging Face writes it instead. The original app used BLIP, but Hugging Face's API no longer hosts it. In text mode, your words are used as they are.
+2. **Pull out keywords.** In photo mode, Claude picks 3–5 hashtags along with the caption. In text mode, and whenever there's no Anthropic key, the original TextRank method, ported to TypeScript ([lib/keywords.ts](lib/keywords.ts)), ranks the words and keeps the top 5. TextRank can't rank the words of a single long sentence, because they all score the same, which is why Claude picks the photo hashtags.
+3. **Gather candidate songs.** All sources run at the same time, and a source that fails or has no key is skipped ([app/api/playlist/route.ts](app/api/playlist/route.ts)):
+   - **TikTok:** the sounds used in recent videos under up to 3 of the hashtags, ranked by how many videos use each sound ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
+   - **Last.fm:** the top tracks listeners have tagged with each keyword.
+   - **Genius:** songs whose title or lyrics match each keyword.
+   - **Deezer:** the top search results for each keyword.
+   - **Lyrics index:** the original project's TF-IDF and cosine-similarity match against 20,000 songs from the Kaggle Spotify dataset.
+4. **Curate.** Claude Sonnet 5.5 picks about 20 songs and orders them so the playlist flows ([lib/curate.ts](lib/curate.ts)). It keeps trending TikTok sounds that are real released songs, drops creators' "original sound" clips, keeps at most two songs per artist, and may add up to a third of the songs itself. Its output is structured JSON checked against a schema. Without an Anthropic key, the app alternates between sources instead.
+5. **Match on Spotify.** The server looks up each pick in Spotify's catalog, all in parallel, and drops songs Spotify doesn't have ([lib/spotify.ts](lib/spotify.ts)).
+6. **Save.** Spotify login runs in the browser using PKCE, so no secret is needed there. The app then creates a private playlist and adds the tracks ([lib/spotify-auth.ts](lib/spotify-auth.ts)).
+
+The API streams progress back to the app, so the caption and hashtags appear right away while the slower sources (mostly TikTok) are still running.
+
+## APIs and tools
+
+| Service | Used for | Env variable | Cost |
+|---|---|---|---|
+| [Claude API](https://docs.claude.com) (Claude Sonnet 5.5) | Captioning photos; picking, filtering and ordering the playlist | `ANTHROPIC_API_KEY` | A few cents per playlist |
+| [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers) | Backup photo captioning when there's no Anthropic key | `HF_TOKEN` | Small free monthly credit, then paid |
+| [Apify](https://apify.com/clockworks/tiktok-scraper) TikTok scraper | Sounds used under each hashtag | `APIFY_TOKEN` | About $1.70 per 1,000 videos (~$0.10 per playlist) |
+| [Last.fm API](https://www.last.fm/api) | Top tracks for a tag | `LASTFM_API_KEY` | Free |
+| [Genius API](https://docs.genius.com) | Title and lyric search | `GENIUS_ACCESS_TOKEN` | Free |
+| [Deezer API](https://developers.deezer.com/api) | Keyword track search | none | Free |
+| [Spotify Web API](https://developer.spotify.com/documentation/web-api) | Track lookup, album art, saving playlists | `NEXT_PUBLIC_SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Free (owner needs Premium) |
+| [Kaggle Spotify Million Song Dataset](https://www.kaggle.com/datasets/notshrirang/spotify-million-song-dataset) | Lyrics for the TF-IDF index | none | Free |
+
+Every key is optional, and each one turns on a single feature. With no keys at all, text mode still works using Deezer and the lyrics index, but photo mode needs a captioning key. [.env.example](.env.example) lists every variable, including optional ones like `HF_CAPTION_MODEL`, `APIFY_TIKTOK_ACTOR` and `TIKTOK_RESULTS_PER_HASHTAG`.
+
+**Built with:**
+- **App:** Next.js 16 (App Router) with React 19 and TypeScript, deployed on Vercel.
+- **Server libraries:** `@anthropic-ai/sdk` and `zod` for the Claude call, and `stemmer` (Porter stemmer) for keywords.
+- **Index builder:** Python with scikit-learn ([scripts/build_index.py](scripts/build_index.py)) precomputes the lyrics TF-IDF matrix as an inverted index, so the server needs no Python. Each term keeps its 60 highest-weighted songs, so scores closely approximate the original full comparison rather than exactly matching it.
+
+## Project structure
+```
+app/
+  page.tsx                 iOS-style UI (Photo/Text toggle, results, save/copy)
+  api/playlist/route.ts    the pipeline; streams progress as NDJSON
+  manifest.ts, icon.tsx    home-screen install and app icon
+lib/
+  caption.ts               photo captioning (Claude vision, Hugging Face backup)
+  keywords.ts              TextRank keyword extraction
+  recommend.ts             lyrics TF-IDF lookup
+  sources/                 TikTok (Apify), Last.fm, Genius, Deezer
+  curate.ts                Claude playlist curation
+  spotify.ts               server-side Spotify search
+  spotify-auth.ts          browser Spotify login (PKCE) and saving
+data/lyrics-index.json     precomputed lyrics index
+scripts/build_index.py     builds the index from the Kaggle CSV
+Melodrip.py, Melodrip.ipynb  original 2024 Streamlit / Colab versions
+```
+
+## Running it
+
+**Deploy to Vercel**
+1. Import the repo at [vercel.com/new](https://vercel.com/new). It is detected as Next.js automatically.
+2. Add whichever keys you have from [.env.example](.env.example).
+3. For Spotify:
+   - Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
+   - Add the redirect URI `https://<your-domain>/` (and `http://127.0.0.1:3000/` for local testing).
+   - Add the Spotify accounts that may save playlists under **User Management**.
+4. Deploy.
+
+**Local development**
+```bash
+npm install
+cp .env.example .env.local   # skip if you already have .env.local
+npm run dev                  # http://localhost:3000
+```
+
+### API keys and `.env.local`
+Keys are kept in two places, and both need updating when a key changes:
+
+| Where | Used by | How to edit |
+|---|---|---|
+| `.env.local` in the project folder | `npm run dev` and `npm run build` on your computer | Open it in an editor. One `NAME="value"` per line. |
+| Vercel → Project → Settings → Environment Variables | The live site | Dashboard, or `npx vercel env add NAME production`. Redeploy afterwards (`npx vercel deploy --prod`). |
+
+`.env.local` is listed in `.gitignore` and `.vercelignore`, so it is never committed or uploaded. Keep it private, and never paste keys into issues, commits or chats. [.env.example](.env.example) is the committed template, with every variable name and no values.
+
+To copy the live site's keys into a fresh `.env.local` (for example, on a new computer), run:
+```bash
+npx vercel link                                       # once per computer
+npx vercel env pull .env.local --environment=production
+```
+Variables stored as "Sensitive" in Vercel can't be read back. If they come through empty, copy them in by hand.
+
+**Rotating a key:** create a new key at the provider (see the links in [.env.example](.env.example)), replace it in both places, then redeploy. Delete the old key at the provider only after the new one works.
+
+**Testing Spotify save locally:** Spotify only redirects to addresses registered in your app's dashboard settings. To test "Save to Spotify" on your computer, add `http://127.0.0.1:3000/` as a redirect URI and open the app at `http://127.0.0.1:3000`, not `localhost`.
+
+**Rebuild the lyrics index** (after changing `spotify_millsongdata.csv`):
+```bash
+pip install -r scripts/requirements.txt
+npm run build:index
+```
+
+## Limits
+- **Spotify saving is capped at 5 users.** Spotify's Development Mode (as of February 2026) lets only 5 allowlisted accounts save playlists, and the app owner needs Premium. Wider access needs Spotify's extended quota, which requires a registered business with about 250,000 monthly users. Everyone else can use Copy Spotify Links.
+- **TikTok has no official API for hashtag sounds.** The app uses a third-party scraper, which is against TikTok's terms of service and can stop working if TikTok blocks it. The rest of the app keeps working if it does. Results are cached for 6 hours per server instance to limit cost.
+- **Photo captions need the Anthropic key**, or Hugging Face credits for the backup captioner. Hugging Face's free monthly credit is small and runs out quickly.
+
+---
+
+# Original hackathon report (2024)
 
 ### Introduction:
 April 20th, 2024 was Whitman College’s first hackathon. At this hackathon, Saki Bishop and Yuttanawee Buahom decided to participate as a two person team. At this hackathon, various ideas were put out but we were having a hard time settling on an idea, and thus were quite stumped as to what we should do. As we were racking our brains to find something unique and interesting to do, we found various models on huggingface that turns images into text and also classified lyrics into a music genre. Considering how fun it can be to play around with image generators, we were curious if we could combine the ideas of image to text and text to genre/mood to create a music playlist for a submitted image. The idea is that we would input a photo, which would then be given a caption that would next be analyzed into a theme, and then finally be grouped together with other songs of similar themes. With the usage of models from huggingface, we figured it could be possible to easily implement this despite there being many moving parts in this program.
