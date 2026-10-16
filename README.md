@@ -6,7 +6,7 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 
 ## Features
 - **Photo or Text toggle.** Caption a photo (taken with the camera, picked from the library, or pasted as a link), or skip captioning and type a scene or mood directly.
-- **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it.
+- **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it, plus a one-line reason.
 - **Save to Spotify** creates the playlist in your Spotify account. **Copy Spotify Links** works for anyone: paste the links into a Spotify playlist on desktop.
 - **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon and follows light and dark mode.
 
@@ -41,25 +41,102 @@ flowchart LR
 
 The API streams progress back to the app, so the caption and hashtags appear right away while the slower sources (mostly TikTok) are still running.
 
-## APIs and tools
+## Integrations: what, why, how and cost
 
-| Service | Used for | Env variable | Cost |
-|---|---|---|---|
-| [Claude API](https://docs.claude.com) (Claude Sonnet 5.5) | Captioning photos; picking, filtering and ordering the playlist | `ANTHROPIC_API_KEY` | A few cents per playlist |
-| [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers) | Backup photo captioning when there's no Anthropic key | `HF_TOKEN` | Small free monthly credit, then paid |
-| [Apify](https://apify.com/clockworks/tiktok-scraper) TikTok scraper | Sounds used under each hashtag | `APIFY_TOKEN` | About $1.70 per 1,000 videos (~$0.10 per playlist) |
-| [Last.fm API](https://www.last.fm/api) | Top tracks for a tag | `LASTFM_API_KEY` | Free |
-| [Genius API](https://docs.genius.com) | Title and lyric search | `GENIUS_ACCESS_TOKEN` | Free |
-| [Deezer API](https://developers.deezer.com/api) | Keyword track search | none | Free |
-| [Spotify Web API](https://developer.spotify.com/documentation/web-api) | Track lookup, album art, saving playlists | `NEXT_PUBLIC_SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Free (owner needs Premium) |
-| [Kaggle Spotify Million Song Dataset](https://www.kaggle.com/datasets/notshrirang/spotify-million-song-dataset) | Lyrics for the TF-IDF index | none | Free |
+Melodrip combines several services. Each one is optional and switches on when its key is set (see [.env.example](.env.example)). If a service fails or has no key, the app skips it and builds the playlist from the rest.
 
-Every key is optional, and each one turns on a single feature. With no keys at all, text mode still works using Deezer and the lyrics index, but photo mode needs a captioning key. [.env.example](.env.example) lists every variable, including optional ones like `HF_CAPTION_MODEL`, `APIFY_TIKTOK_ACTOR` and `TIKTOK_RESULTS_PER_HASHTAG`.
+### Cost per playlist at a glance
 
-**Built with:**
-- **App:** Next.js 16 (App Router) with React 19 and TypeScript, deployed on Vercel.
-- **Server libraries:** `@anthropic-ai/sdk` and `zod` for the Claude call, and `stemmer` (Porter stemmer) for keywords.
-- **Index builder:** Python with scikit-learn ([scripts/build_index.py](scripts/build_index.py)) precomputes the lyrics TF-IDF matrix as an inverted index, so the server needs no Python. Each term keeps its 60 highest-weighted songs, so scores closely approximate the original full comparison rather than exactly matching it.
+| Service | Cost per playlist | Free allowance |
+|---|---|---|
+| Claude: photo caption | ~$0.005–0.01 (photo mode only) | None (pay as you go) |
+| Claude: playlist curation | ~$0.02–0.04 | None (pay as you go) |
+| Apify TikTok scraper | ~$0.10 (60 videos), $0 when cached | $5 credit/month on the free plan (about 50 playlists) |
+| Spotify, Last.fm, Genius, Deezer | $0 | Free (rate limited) |
+| Hugging Face (backup captions only) | ~$0.001 | $0.10/month free, $2/month with PRO |
+| Vercel hosting, GitHub | $0 | Free Hobby plan / free public repo |
+| **Total** | **~$0.12–0.16 per photo playlist, ~$0.12–0.14 per text playlist** | |
+
+The Claude figures are estimates: about 1,200 input and 500 output tokens per caption, and 4,000 input and 1,000–3,000 output tokens per curation, at Claude Sonnet 5.5's $2 per million input tokens and $10 per million output tokens. TikTok is the largest cost. Lower `TIKTOK_RESULTS_PER_HASHTAG` to reduce it, or remove `APIFY_TOKEN` to turn TikTok off.
+
+### Claude API (Anthropic): photo captions and curation
+- **What:** Claude Sonnet 5.5 does two jobs:
+  1. **Captions:** it describes a photo in one or two sentences and picks 3–5 hashtags ([lib/caption.ts](lib/caption.ts)).
+  2. **Curation:** it chooses and orders about 20 songs from all the candidates ([lib/curate.ts](lib/curate.ts)).
+- **Why:**
+  - **Captions:** the original BLIP captioner is no longer hosted by Hugging Face's API, and its captions were short (a limitation noted in the 2024 report). Claude writes richer captions and picks hashtags directly. TextRank can't rank the words of one long sentence, because they all score the same.
+  - **Curation:** the sources return noisy matches. A song called "Coffee" isn't necessarily a coffee-shop song, and many TikTok sounds are creators' "original sound" clips rather than real songs. Claude judges mood, removes duplicates, limits each artist to two songs, recognizes which TikTok sounds are released songs, and fills gaps with well-known songs (at most a third of the list).
+- **How:**
+  - **Request:** the Messages API through `@anthropic-ai/sdk`, with structured outputs. A Zod schema guarantees valid JSON.
+  - **Effort:** set to `low` for captions and `medium` for curation, to keep it fast.
+  - **Refusals:** `fallbacks: "default"` re-runs a declined request on another Claude model.
+  - **Without a key:** text mode uses TextRank keywords, and a simple mix of the sources replaces curation.
+- **Cost:** about $0.03–0.05 per playlist (see above). Sign up and add billing at [console.anthropic.com](https://console.anthropic.com).
+- **Key:** `ANTHROPIC_API_KEY`
+
+### Apify TikTok scraper: trending sounds per hashtag
+- **What:** for up to 3 hashtags, it collects the sounds used in about 20 recent TikTok videos each, then ranks the sounds by how many videos use them ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
+- **Why:** TikTok is where songs trend, so a sound that keeps showing up under #beach fits a beach photo in a way lyrics matching can't. TikTok has no official API for this: the Research API is for approved academic researchers, and Creative Center has no API. That leaves third-party scrapers.
+- **How:**
+  - **Scraper:** one synchronous run of the [`clockworks/tiktok-scraper`](https://apify.com/clockworks/tiktok-scraper) actor via Apify's `run-sync-get-dataset-items` endpoint, with every media download turned off.
+  - **Ranking:** sounds are grouped by name and artist, then counted.
+  - **Cache:** results are cached for 6 hours per server instance.
+  - **Settings:** change the actor with `APIFY_TIKTOK_ACTOR` and the videos per hashtag with `TIKTOK_RESULTS_PER_HASHTAG`.
+- **Cost:** about $1.70 per 1,000 videos. That's roughly $0.10 per playlist, and repeated hashtags cost nothing while cached. The free plan includes $5 of credit a month.
+- **Caveat:** scraping is against TikTok's terms of service and can break if TikTok blocks the scraper. If it does, the app keeps working without TikTok.
+- **Key:** `APIFY_TOKEN` (from [console.apify.com](https://console.apify.com) → Settings → API & Integrations)
+
+### Spotify Web API: matching tracks and saving playlists
+- **What:**
+  - **Matching:** each picked song is looked up in Spotify's catalog, which gives the exact track, its link and album art ([lib/spotify.ts](lib/spotify.ts)).
+  - **Saving:** "Save to Spotify" creates a private playlist in the user's own account ([lib/spotify-auth.ts](lib/spotify-auth.ts)).
+- **Why:** users want to listen right away. Matching also removes picks that don't exist on Spotify, such as invented or mislabeled songs.
+- **How:**
+  - **Search:** runs on the server with the client-credentials flow, in parallel for all songs. It tries an exact `track:`/`artist:` search first, then a looser free-text search.
+  - **Login:** saving uses Authorization Code with PKCE in the browser, so the secret never reaches the browser.
+  - **Saving:** the app then calls `POST /me/playlists` and `POST /playlists/{id}/items` (Spotify's endpoints since February 2026).
+  - **Copy Spotify Links** copies every track link, so anyone can paste the playlist into Spotify.
+- **Cost:** free. In Development Mode, the app owner needs Spotify Premium.
+- **Caveat:** in Development Mode, only **5 allowlisted accounts** can save playlists. Wider access needs Spotify's extended quota, which requires a registered business with about 250,000 monthly users.
+- **Keys:** `NEXT_PUBLIC_SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard))
+
+### Last.fm API: songs listeners tagged with the keyword
+- **What:** `tag.getTopTracks` returns the top 10 tracks for each keyword's tag, such as "rain", "summer" or "roadtrip" ([lib/sources/music-apis.ts](lib/sources/music-apis.ts)).
+- **Why:** Last.fm tags come from real listeners and describe mood and setting, not just title words. That makes them the best match for "what does this scene sound like".
+- **Cost:** free for non-commercial use, with an API key.
+- **Key:** `LASTFM_API_KEY` (from [last.fm/api/account/create](https://www.last.fm/api/account/create))
+
+### Genius API: title and lyric matches
+- **What:** a search that matches song titles and lyrics for each keyword, keeping the top 6 per keyword.
+- **Why:** it carries on the original project's lyrics-matching idea, using a live catalog instead of 20,000 songs.
+- **Cost:** free, with a client access token.
+- **Key:** `GENIUS_ACCESS_TOKEN` (from [genius.com/api-clients](https://genius.com/api-clients))
+
+### Deezer API: keyword search
+- **What:** a public track search for each keyword, keeping the top 8 per keyword.
+- **Why:** it needs no key, so the app always has popular, real tracks even with nothing configured.
+- **Cost:** free, no key.
+
+### Lyrics TF-IDF index: the original 2024 algorithm
+- **What:** the hackathon's TextRank → TF-IDF → cosine-similarity matching against 20,000 songs from the [Kaggle Spotify Million Song Dataset](https://www.kaggle.com/datasets/notshrirang/spotify-million-song-dataset) ([lib/recommend.ts](lib/recommend.ts)).
+- **Why:** it keeps the project's original method, and it works offline with no key.
+- **How:**
+  - **Index:** [scripts/build_index.py](scripts/build_index.py) uses scikit-learn to precompute the TF-IDF matrix as an inverted index (`data/lyrics-index.json`). Each term keeps its 60 highest-weighted songs.
+  - **Scoring:** a keyword's cosine score is then a lookup, so the server needs no Python. The scores closely approximate the original full comparison rather than exactly matching it.
+- **Cost:** free.
+
+### Hugging Face Inference Providers: backup captions
+- **What:** a vision model (default `google/gemma-4-26B-A4B-it`) captions photos, but only when no Anthropic key is set.
+- **Why:** it keeps photo mode working without Claude. BLIP itself is no longer offered by Hugging Face's API.
+- **Cost:** free users get $0.10 of credit a month, which runs out quickly. PRO ($9/month) includes $2 a month, then pay as you go.
+- **Key:** `HF_TOKEN`; `HF_CAPTION_MODEL` is optional.
+
+### Hosting and code
+- **GitHub:** this repository is the source of truth. Pushing to `main` deploys the app.
+- **Vercel:** hosts the site and runs the API. It's connected to this repository, builds every push to `main` automatically, and stores the production keys. It's free on the Hobby plan, which is for non-commercial projects.
+- **Framework and libraries:**
+  - **App:** Next.js 16 (App Router), React 19 and TypeScript.
+  - **Server libraries:** `@anthropic-ai/sdk` and `zod` for Claude, and `stemmer` (Porter stemmer) for TextRank keywords.
 
 ## Project structure
 ```
@@ -82,14 +159,23 @@ Melodrip.py, Melodrip.ipynb  original 2024 Streamlit / Colab versions
 
 ## Running it
 
-**Deploy to Vercel**
-1. Import the repo at [vercel.com/new](https://vercel.com/new). It is detected as Next.js automatically.
-2. Add whichever keys you have from [.env.example](.env.example).
+**Deploying: push to GitHub**
+
+The live site deploys automatically from this repository:
+```bash
+git checkout -b my-change        # work on a branch
+git commit -am "Describe the change"
+git push -u origin my-change     # open a pull request on GitHub
+```
+Merging the pull request into `main` deploys it to the live site within a minute or two. You don't need to run any Vercel commands.
+
+**First-time setup** (only needed for a fresh copy of the project):
+1. Import the repo at [vercel.com/new](https://vercel.com/new). It's detected as Next.js automatically.
+2. Add the keys from [.env.example](.env.example) under Project → Settings → Environment Variables.
 3. For Spotify:
    - Create an app at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard).
    - Add the redirect URI `https://<your-domain>/` (and `http://127.0.0.1:3000/` for local testing).
    - Add the Spotify accounts that may save playlists under **User Management**.
-4. Deploy.
 
 **Local development**
 ```bash
@@ -104,16 +190,11 @@ Keys are kept in two places, and both need updating when a key changes:
 | Where | Used by | How to edit |
 |---|---|---|
 | `.env.local` in the project folder | `npm run dev` and `npm run build` on your computer | Open it in an editor. One `NAME="value"` per line. |
-| Vercel → Project → Settings → Environment Variables | The live site | Dashboard, or `npx vercel env add NAME production`. Redeploy afterwards (`npx vercel deploy --prod`). |
+| Vercel → Project → Settings → Environment Variables | The live site | In the dashboard. Then redeploy: push any commit to `main`, or use **Redeploy** on the latest deployment. |
 
 `.env.local` is listed in `.gitignore` and `.vercelignore`, so it is never committed or uploaded. Keep it private, and never paste keys into issues, commits or chats. [.env.example](.env.example) is the committed template, with every variable name and no values.
 
-To copy the live site's keys into a fresh `.env.local` (for example, on a new computer), run:
-```bash
-npx vercel link                                       # once per computer
-npx vercel env pull .env.local --environment=production
-```
-Variables stored as "Sensitive" in Vercel can't be read back. If they come through empty, copy them in by hand.
+**On a new computer:** copy `.env.example` to `.env.local` and fill in each key. Every variable in `.env.example` has a link to where you get it.
 
 **Rotating a key:** create a new key at the provider (see the links in [.env.example](.env.example)), replace it in both places, then redeploy. Delete the old key at the provider only after the new one works.
 
@@ -126,9 +207,10 @@ npm run build:index
 ```
 
 ## Limits
-- **Spotify saving is capped at 5 users.** Spotify's Development Mode (as of February 2026) lets only 5 allowlisted accounts save playlists, and the app owner needs Premium. Wider access needs Spotify's extended quota, which requires a registered business with about 250,000 monthly users. Everyone else can use Copy Spotify Links.
-- **TikTok has no official API for hashtag sounds.** The app uses a third-party scraper, which is against TikTok's terms of service and can stop working if TikTok blocks it. The rest of the app keeps working if it does. Results are cached for 6 hours per server instance to limit cost.
-- **Photo captions need the Anthropic key**, or Hugging Face credits for the backup captioner. Hugging Face's free monthly credit is small and runs out quickly.
+- **Spotify saving is capped at 5 allowlisted users** while the app is in Development Mode. Everyone else can use Copy Spotify Links.
+- **TikTok depends on a third-party scraper**, which is against TikTok's terms of service and can stop working at any time. The rest of the app keeps working if it does.
+- **Photo captions need the Anthropic key**, or Hugging Face credits for the backup captioner.
+- **Cost grows with use.** At about $0.12–0.16 per playlist, mostly TikTok scraping and Claude, the free tiers cover a few dozen playlists a month. Lower `TIKTOK_RESULTS_PER_HASHTAG` or turn sources off to reduce cost.
 
 ---
 
