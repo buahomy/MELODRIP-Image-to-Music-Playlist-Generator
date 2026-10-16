@@ -1,33 +1,20 @@
 {
-  "name": "Python 3",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
+  "name": "Melodrip",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
   "customizations": {
     "codespaces": {
-      "openFiles": [
-        "README.md",
-        "Melodrip2.py"
-      ]
-    },
-    "vscode": {
-      "settings": {},
-      "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance"
-      ]
+      "openFiles": ["README.md", "app/page.tsx"]
     }
   },
-  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
+  "updateContentCommand": "npm install",
   "postAttachCommand": {
-    "server": "streamlit run Melodrip2.py --server.enableCORS false --server.enableXsrfProtection false"
+    "server": "npm run dev"
   },
   "portsAttributes": {
-    "8501": {
+    "3000": {
       "label": "Application",
       "onAutoForward": "openPreview"
     }
   },
-  "forwardPorts": [
-    8501
-  ]
+  "forwardPorts": [3000]
 }
