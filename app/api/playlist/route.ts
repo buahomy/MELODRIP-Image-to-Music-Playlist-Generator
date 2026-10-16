@@ -6,7 +6,7 @@ import { deezerSearch, geniusEnabled, geniusSearch, lastfmEnabled, lastfmTagTrac
 import { tiktokEnabled, tiktokSounds } from "@/lib/sources/tiktok";
 import type { Candidate, Source } from "@/lib/sources/types";
 import { findTrack, spotifyEnabled, type SpotifyTrack } from "@/lib/spotify";
-import { CLAUDE_IMAGE_TYPES, planFromText, understandWithClaude, type SearchPlan, type UnderstandInput } from "@/lib/understand";
+import { CLAUDE_IMAGE_TYPES, findSignatureSongs, planFromText, understandWithClaude, type SearchPlan, type UnderstandInput } from "@/lib/understand";
 
 export const runtime = "nodejs";
 // TikTok scraping alone can take over a minute.
@@ -86,11 +86,20 @@ async function gatherCandidates(plan: SearchPlan, notes: string[]): Promise<Cand
     source: "lyrics",
     detail: `lyrics match ${s.score.toFixed(2)}`,
   }));
+  // A named subject's signature audios are looked up on the web, in parallel
+  // with the other sources, and lead the candidate list.
+  const signature =
+    plan.subject && claudeEnabled()
+      ? findSignatureSongs(plan.subject, plan.context).catch((err) => {
+          console.error("Signature audio lookup failed:", err);
+          return [] as Candidate[];
+        })
+      : Promise.resolve([] as Candidate[]);
   const jobs: [string, Promise<Candidate[]>][] = [
     ["Lyrics", Promise.resolve(lyrics)],
     ["Deezer", Promise.all(plan.searchTerms.map(deezerSearch)).then(interleave)],
   ];
-  if (tiktokEnabled()) jobs.push(["TikTok", tiktokSounds(plan.hashtags)]);
+  if (tiktokEnabled()) jobs.push(["TikTok", tiktokSounds(plan.hashtags, plan.tiktokSearches)]);
   if (lastfmEnabled()) jobs.push(["Last.fm", Promise.all(plan.tags.map(lastfmTagTracks)).then(interleave)]);
   if (geniusEnabled()) jobs.push(["Genius", Promise.all(plan.searchTerms.map(geniusSearch)).then(interleave)]);
 
@@ -101,7 +110,7 @@ async function gatherCandidates(plan: SearchPlan, notes: string[]): Promise<Cand
     notes.push(`${jobs[i][0]} was unavailable this time.`);
     return [];
   });
-  return [...plan.seedSongs, ...found];
+  return [...(await signature), ...plan.seedSongs, ...found];
 }
 
 async function resolveOnSpotify(playlist: CuratedPlaylist, notes: string[]): Promise<PlaylistSong[]> {
@@ -138,7 +147,14 @@ export async function POST(request: Request) {
         const plan = await buildPlan(await readInput(body), notes);
         send({ type: "analysis", caption: plan.scene, context: plan.context, keywords: plan.hashtags });
 
-        send({ type: "status", message: tiktokEnabled() ? "Digging through TikTok hashtags…" : "Searching music libraries…" });
+        send({
+          type: "status",
+          message: plan.subject
+            ? `Looking up the audios famous for ${plan.subject}…`
+            : tiktokEnabled()
+              ? "Digging through TikTok hashtags…"
+              : "Searching music libraries…",
+        });
         const candidates = await gatherCandidates(plan, notes);
 
         let playlist: CuratedPlaylist;

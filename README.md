@@ -22,13 +22,15 @@ flowchart LR
   U -->|search phrases| D[Deezer search]
   U -->|lyric words| X[Lyrics TF-IDF index]
   U -->|seed songs| SD[Songs tied to the subject]
-  T & L & G & D & X & SD --> CL[Claude picks ~20 songs]
+  U -->|named subject| W[Web search: its signature audios]
+  T & L & G & D & X & SD & W --> CL[Claude picks ~20 songs]
   CL --> S[Spotify lookup]
   S --> P[Playlist → Save to Spotify / Copy links]
 ```
 
 1. **Understand the input** ([lib/understand.ts](lib/understand.ts)). Claude Sonnet 5.5 reads the photo or text and works out what it refers to: a person, a character, a show, a meme, an aesthetic, or just a scene. It considers what people associate with it, especially on TikTok, and returns a **search plan**, giving each source the kind of query it's good at:
-   - **Hashtags** people actually use on TikTok, e.g. `#maddyperez #euphoria #baddie`.
+   - **The named subject**, if there is one, e.g. "Maddy Perez (Euphoria)". Plain scenes have none.
+   - **Hashtags** people actually use on TikTok, e.g. `#maddyperez #euphoria #baddie`, plus 1–2 **TikTok searches** such as "maddy perez edit".
    - **Search phrases** for Deezer and Genius, e.g. "euphoria soundtrack".
    - **Mood and genre tags** for Last.fm, e.g. "rnb", "dark pop".
    - **Lyric words** for the original lyrics index.
@@ -40,21 +42,22 @@ flowchart LR
 
    **Without an Anthropic key**, the original TextRank method ([lib/keywords.ts](lib/keywords.ts)) picks the keywords. Short inputs are also kept whole: "maddy perez" also searches as `#maddyperez` and as the full phrase. Photos are then captioned by a Hugging Face vision model instead.
 2. **Gather candidate songs.** All sources run at the same time, each with its part of the plan. A source that fails or has no key is skipped ([app/api/playlist/route.ts](app/api/playlist/route.ts)):
-   - **TikTok:** the sounds used in recent videos under the top 3 hashtags, ranked by how many videos use each sound ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
+   - **Signature-audio lookup** (named subjects only): a separate Claude call searches the web for the songs famously used in TikTok edits, trends and memes about the subject, and lists only songs the results mention. This is its own step because, asked to plan and search in one call, Claude often skipped the search and answered from memory, which misses which exact audio a trend uses. These songs lead the candidate list.
+   - **TikTok:** one scraper run covering the hashtag feeds (recent posts) and the keyword searches (TikTok's top videos), up to 4 queries in total ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)). Each video adds log₁₀(its views) to its sound's score, so an audio used in a few viral edits outranks one used in many videos nobody watched.
    - **Last.fm:** the top tracks listeners have tagged with each mood or genre tag.
    - **Genius:** songs whose title or lyrics match each search phrase.
    - **Deezer:** the top results for each search phrase.
    - **Lyrics index:** the original project's TF-IDF and cosine-similarity match against 20,000 songs from the Kaggle Spotify dataset.
    - **Seed songs** from step 1.
 3. **Curate.** Claude Sonnet 5.5 picks about 20 songs and orders them so the playlist flows ([lib/curate.ts](lib/curate.ts)). It's given the context as well as the candidates.
-   - **Named subjects:** for a person, character, show or aesthetic, it leads with the songs tied to that subject and with TikTok sounds that are real songs, and leaves out candidates that only share a word with the input.
+   - **Named subjects:** for a person, character, show or aesthetic, it opens with the subject's signature audio, then the other songs tied to it and the most-viewed TikTok sounds that are real songs. It leaves out candidates that only share a word with the input.
    - **Plain scenes:** it matches the mood.
    - **Rules:** it drops creators' "original sound" clips and keeps at most two songs per artist. Its own picks, including the seed songs, are capped at half the list.
    - **Without an Anthropic key,** the app alternates between sources instead.
 4. **Match on Spotify.** The server looks up each pick in Spotify's catalog, all in parallel, and drops songs Spotify doesn't have, including any invented or mislabelled ones ([lib/spotify.ts](lib/spotify.ts)).
 5. **Save.** Spotify login runs in the browser using PKCE, so no secret is needed there. The app then creates a private playlist and adds the tracks ([lib/spotify-auth.ts](lib/spotify-auth.ts)).
 
-The API streams progress back to the app, so the caption, context and hashtags appear within a few seconds while the slower sources are still running. A repeat search takes about 15 seconds. A new hashtag takes 30–60 seconds, because the TikTok scraper has to start up and collect videos, and big hashtags like #euphoria are the slowest. Repeat hashtags are cached for 6 hours.
+The API streams progress back to the app, so the caption, context and hashtags appear within a few seconds while the slower sources are still running. A plain scene takes about 15 seconds when its TikTok results are cached. A named subject adds the web lookup, which takes about 15–25 seconds but runs alongside TikTok. New TikTok queries take 30–60 seconds, because the scraper has to start up and collect videos, and big hashtags like #euphoria are the slowest. Repeat queries are cached for 6 hours.
 
 ## Integrations: what, why, how and cost
 
@@ -65,19 +68,21 @@ Melodrip combines several services. Each one is optional and switches on when it
 | Service | Cost per playlist | Free allowance |
 |---|---|---|
 | Claude: search plan (includes the photo caption) | ~$0.005–0.01 | None (pay as you go) |
+| Claude: signature-audio web lookup (named subjects only) | ~$0.03–0.05 (3 web searches at $0.01 each, plus tokens) | None (pay as you go) |
 | Claude: playlist curation | ~$0.02–0.04 | None (pay as you go) |
-| Apify TikTok scraper | ~$0.10 (60 videos), $0 when cached | $5 credit/month on the free plan (about 50 playlists) |
+| Apify TikTok scraper | ~$0.10–0.14 (60–80 videos), $0 when cached | $5 credit/month on the free plan (about 35–50 playlists) |
 | Spotify, Last.fm, Genius, Deezer | $0 | Free (rate limited) |
 | Hugging Face (backup captions only) | ~$0.001 | $0.10/month free, $2/month with PRO |
 | Vercel hosting, GitHub | $0 | Free Hobby plan / free public repo |
-| **Total** | **~$0.13–0.16 per playlist** (about $0.03–0.05 when the TikTok hashtags are cached) | |
+| **Total** | **~$0.13–0.18 for a plain scene, ~$0.17–0.24 for a named subject** (about $0.03–0.10 when TikTok is cached) | |
 
 The Claude figures are estimates: about 1,500 input and 800 output tokens per search plan, and 4,000 input and 1,000–3,000 output tokens per curation, at Claude Sonnet 5.5's $2 per million input tokens and $10 per million output tokens. TikTok is the largest cost. Lower `TIKTOK_RESULTS_PER_HASHTAG` to reduce it, or remove `APIFY_TOKEN` to turn TikTok off.
 
 ### Claude API (Anthropic): understanding the input and curating
-- **What:** Claude Sonnet 5.5 does two jobs per playlist:
-  1. **Search plan** ([lib/understand.ts](lib/understand.ts)): it works out what the photo or text refers to, then returns the hashtags, search phrases, mood tags, lyric words and seed songs that each source uses. For photos, it also writes the caption in the same call.
-  2. **Curation** ([lib/curate.ts](lib/curate.ts)): it chooses and orders about 20 songs from all the candidates.
+- **What:** Claude Sonnet 5.5 does up to three jobs per playlist:
+  1. **Search plan** ([lib/understand.ts](lib/understand.ts)): it works out what the photo or text refers to, then returns the named subject, hashtags, TikTok searches, search phrases, mood tags, lyric words and seed songs that each source uses. For photos, it also writes the caption in the same call.
+  2. **Signature-audio lookup** (named subjects only): with the [web search tool](https://docs.claude.com/en/docs/agents-and-tools/tool-use/web-search-tool), it finds the songs famously used in TikTok edits and memes about the subject. It answers in plain text, one song per line, because when asked for JSON it tended to skip the search.
+  3. **Curation** ([lib/curate.ts](lib/curate.ts)): it chooses and orders about 20 songs from all the candidates.
 - **Why:**
   - **Search plan:** people type names, characters, shows, memes and aesthetics, not just scenes. Searching each word on its own misses the point: "maddy perez" means Euphoria, the baddie aesthetic and Maddy edit audios. Only a model with broad cultural knowledge can make that connection, and it also replaces BLIP, which Hugging Face's API no longer hosts and whose captions were short (a limitation the 2024 report notes).
   - **Curation:** the sources return noisy matches. A song called "Coffee" isn't necessarily a coffee-shop song, and many TikTok sounds are creators' "original sound" clips rather than real songs. Claude judges fit and mood, removes duplicates, limits each artist to two songs, and recognises which TikTok sounds are released songs.
@@ -86,7 +91,7 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
   - **Effort:** `low` for the search plan and `medium` for curation, to keep it fast.
   - **Refusals:** `fallbacks: "default"` re-runs a declined request on another Claude model.
   - **Without a key:** TextRank keywords, with short inputs also kept whole, replace the search plan, and a simple mix of the sources replaces curation.
-- **Cost:** about $0.03–0.05 per playlist (see above). Sign up and add billing at [console.anthropic.com](https://console.anthropic.com).
+- **Cost:** about $0.03–0.05 per playlist, plus $0.03–0.05 for the web lookup on named subjects (see above). Sign up and add billing at [console.anthropic.com](https://console.anthropic.com).
 - **Key:** `ANTHROPIC_API_KEY`
 
 ### Apify TikTok scraper: trending sounds per hashtag
@@ -224,7 +229,8 @@ npm run build:index
 
 ## Limits
 - **Spotify saving is capped at 5 allowlisted users** while the app is in Development Mode. Everyone else can use Copy Spotify Links.
-- **TikTok depends on a third-party scraper**, which is against TikTok's terms of service and can stop working at any time. The rest of the app keeps working if it does.
+- **TikTok depends on a third-party scraper**, which is against TikTok's terms of service and can stop working at any time. It also stops when the Apify credit runs out ($5 a month on the free plan). The rest of the app keeps working either way, and the playlist notes that TikTok was unavailable.
+- **Niche audio associations can still be missed.** The web lookup only finds songs that web pages mention alongside the subject, and the TikTok scraper only sees about 20 videos per query. A trend that lives mostly inside TikTok, such as a specific audio used in a character's edits, may not show up. Including the song or trend in the text you type, e.g. "maddy perez yo voy", gives the search a direct lead.
 - **Photo captions need the Anthropic key**, or Hugging Face credits for the backup captioner.
 - **Cost grows with use.** At about $0.12–0.16 per playlist, mostly TikTok scraping and Claude, the free tiers cover a few dozen playlists a month. Lower `TIKTOK_RESULTS_PER_HASHTAG` or turn sources off to reduce cost.
 
