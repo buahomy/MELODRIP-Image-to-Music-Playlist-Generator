@@ -1,8 +1,8 @@
 # Melodrip
 ### Turn a photo or a few words into a playlist.
-**Authors:** Pure and Saki · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
+**Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
-Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now a mobile web app built to feel like a native iPhone app. Claude describes your photo, the description becomes hashtags, the app gathers songs from TikTok and several music services, and has Claude pick a playlist you can save to Spotify.
+Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now a mobile web app built to feel like a native iPhone app. Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
 ## Features
 - **Photo or Text toggle.** Caption a photo (taken with the camera, picked from the library, or pasted as a link), or skip captioning and type a scene or mood directly.
@@ -14,32 +14,47 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 
 ```mermaid
 flowchart LR
-  A[Photo] -->|Claude vision caption| C[Scene text]
-  B[Typed text] --> C
-  C -->|Claude hashtags or TextRank| K[Keywords / hashtags]
-  K --> T[TikTok hashtag sounds]
-  K --> L[Last.fm tags]
-  K --> G[Genius search]
-  K --> D[Deezer search]
-  K --> X[Lyrics TF-IDF index]
-  T & L & G & D & X --> CL[Claude picks ~20 songs]
+  A[Photo] --> U[Claude: understand the input]
+  B[Typed text] --> U
+  U -->|hashtags| T[TikTok hashtag sounds]
+  U -->|mood / genre tags| L[Last.fm tags]
+  U -->|search phrases| G[Genius search]
+  U -->|search phrases| D[Deezer search]
+  U -->|lyric words| X[Lyrics TF-IDF index]
+  U -->|seed songs| SD[Songs tied to the subject]
+  T & L & G & D & X & SD --> CL[Claude picks ~20 songs]
   CL --> S[Spotify lookup]
   S --> P[Playlist → Save to Spotify / Copy links]
 ```
 
-1. **Describe the scene.** Claude Sonnet 5.5 writes a short caption for the photo: the subject, what's happening, the setting and the mood ([lib/caption.ts](lib/caption.ts)). If no Anthropic key is set, a vision model on Hugging Face writes it instead. The original app used BLIP, but Hugging Face's API no longer hosts it. In text mode, your words are used as they are.
-2. **Pull out keywords.** In photo mode, Claude picks 3–5 hashtags along with the caption. In text mode, and whenever there's no Anthropic key, the original TextRank method, ported to TypeScript ([lib/keywords.ts](lib/keywords.ts)), ranks the words and keeps the top 5. TextRank can't rank the words of a single long sentence, because they all score the same, which is why Claude picks the photo hashtags.
-3. **Gather candidate songs.** All sources run at the same time, and a source that fails or has no key is skipped ([app/api/playlist/route.ts](app/api/playlist/route.ts)):
-   - **TikTok:** the sounds used in recent videos under up to 3 of the hashtags, ranked by how many videos use each sound ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
-   - **Last.fm:** the top tracks listeners have tagged with each keyword.
-   - **Genius:** songs whose title or lyrics match each keyword.
-   - **Deezer:** the top search results for each keyword.
-   - **Lyrics index:** the original project's TF-IDF and cosine-similarity match against 20,000 songs from the Kaggle Spotify dataset.
-4. **Curate.** Claude Sonnet 5.5 picks about 20 songs and orders them so the playlist flows ([lib/curate.ts](lib/curate.ts)). It keeps trending TikTok sounds that are real released songs, drops creators' "original sound" clips, keeps at most two songs per artist, and may add up to a third of the songs itself. Its output is structured JSON checked against a schema. Without an Anthropic key, the app alternates between sources instead.
-5. **Match on Spotify.** The server looks up each pick in Spotify's catalog, all in parallel, and drops songs Spotify doesn't have ([lib/spotify.ts](lib/spotify.ts)).
-6. **Save.** Spotify login runs in the browser using PKCE, so no secret is needed there. The app then creates a private playlist and adds the tracks ([lib/spotify-auth.ts](lib/spotify-auth.ts)).
+1. **Understand the input** ([lib/understand.ts](lib/understand.ts)). Claude Sonnet 5.5 reads the photo or text and works out what it refers to: a person, a character, a show, a meme, an aesthetic, or just a scene. It considers what people associate with it, especially on TikTok, and returns a **search plan**, giving each source the kind of query it's good at:
+   - **Hashtags** people actually use on TikTok, e.g. `#maddyperez #euphoria #baddie`.
+   - **Search phrases** for Deezer and Genius, e.g. "euphoria soundtrack".
+   - **Mood and genre tags** for Last.fm, e.g. "rnb", "dark pop".
+   - **Lyric words** for the original lyrics index.
+   - **Seed songs:** up to 8 songs strongly tied to the subject, such as audios famous in edits about it or its soundtrack.
 
-The API streams progress back to the app, so the caption and hashtags appear right away while the slower sources (mostly TikTok) are still running.
+   For a photo, the same call also writes the caption and notices anything recognisable, such as a famous person, a film still or a landmark. The app shows the caption, a line explaining the context (for example "Maddy Perez is a main character from HBO's Euphoria…"), and the hashtags.
+
+   **Why this step exists:** the earlier approach split the input into words and searched each one separately. "maddy perez" became #maddy and #perez, which find nothing useful. Knowing the context is what finds the right music.
+
+   **Without an Anthropic key**, the original TextRank method ([lib/keywords.ts](lib/keywords.ts)) picks the keywords. Short inputs are also kept whole: "maddy perez" also searches as `#maddyperez` and as the full phrase. Photos are then captioned by a Hugging Face vision model instead.
+2. **Gather candidate songs.** All sources run at the same time, each with its part of the plan. A source that fails or has no key is skipped ([app/api/playlist/route.ts](app/api/playlist/route.ts)):
+   - **TikTok:** the sounds used in recent videos under the top 3 hashtags, ranked by how many videos use each sound ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
+   - **Last.fm:** the top tracks listeners have tagged with each mood or genre tag.
+   - **Genius:** songs whose title or lyrics match each search phrase.
+   - **Deezer:** the top results for each search phrase.
+   - **Lyrics index:** the original project's TF-IDF and cosine-similarity match against 20,000 songs from the Kaggle Spotify dataset.
+   - **Seed songs** from step 1.
+3. **Curate.** Claude Sonnet 5.5 picks about 20 songs and orders them so the playlist flows ([lib/curate.ts](lib/curate.ts)). It's given the context as well as the candidates.
+   - **Named subjects:** for a person, character, show or aesthetic, it leads with the songs tied to that subject and with TikTok sounds that are real songs, and leaves out candidates that only share a word with the input.
+   - **Plain scenes:** it matches the mood.
+   - **Rules:** it drops creators' "original sound" clips and keeps at most two songs per artist. Its own picks, including the seed songs, are capped at half the list.
+   - **Without an Anthropic key,** the app alternates between sources instead.
+4. **Match on Spotify.** The server looks up each pick in Spotify's catalog, all in parallel, and drops songs Spotify doesn't have, including any invented or mislabelled ones ([lib/spotify.ts](lib/spotify.ts)).
+5. **Save.** Spotify login runs in the browser using PKCE, so no secret is needed there. The app then creates a private playlist and adds the tracks ([lib/spotify-auth.ts](lib/spotify-auth.ts)).
+
+The API streams progress back to the app, so the caption, context and hashtags appear within a few seconds while the slower sources are still running. A repeat search takes about 15 seconds. A new hashtag takes 30–60 seconds, because the TikTok scraper has to start up and collect videos, and big hashtags like #euphoria are the slowest. Repeat hashtags are cached for 6 hours.
 
 ## Integrations: what, why, how and cost
 
@@ -49,34 +64,34 @@ Melodrip combines several services. Each one is optional and switches on when it
 
 | Service | Cost per playlist | Free allowance |
 |---|---|---|
-| Claude: photo caption | ~$0.005–0.01 (photo mode only) | None (pay as you go) |
+| Claude: search plan (includes the photo caption) | ~$0.005–0.01 | None (pay as you go) |
 | Claude: playlist curation | ~$0.02–0.04 | None (pay as you go) |
 | Apify TikTok scraper | ~$0.10 (60 videos), $0 when cached | $5 credit/month on the free plan (about 50 playlists) |
 | Spotify, Last.fm, Genius, Deezer | $0 | Free (rate limited) |
 | Hugging Face (backup captions only) | ~$0.001 | $0.10/month free, $2/month with PRO |
 | Vercel hosting, GitHub | $0 | Free Hobby plan / free public repo |
-| **Total** | **~$0.12–0.16 per photo playlist, ~$0.12–0.14 per text playlist** | |
+| **Total** | **~$0.13–0.16 per playlist** (about $0.03–0.05 when the TikTok hashtags are cached) | |
 
-The Claude figures are estimates: about 1,200 input and 500 output tokens per caption, and 4,000 input and 1,000–3,000 output tokens per curation, at Claude Sonnet 5.5's $2 per million input tokens and $10 per million output tokens. TikTok is the largest cost. Lower `TIKTOK_RESULTS_PER_HASHTAG` to reduce it, or remove `APIFY_TOKEN` to turn TikTok off.
+The Claude figures are estimates: about 1,500 input and 800 output tokens per search plan, and 4,000 input and 1,000–3,000 output tokens per curation, at Claude Sonnet 5.5's $2 per million input tokens and $10 per million output tokens. TikTok is the largest cost. Lower `TIKTOK_RESULTS_PER_HASHTAG` to reduce it, or remove `APIFY_TOKEN` to turn TikTok off.
 
-### Claude API (Anthropic): photo captions and curation
-- **What:** Claude Sonnet 5.5 does two jobs:
-  1. **Captions:** it describes a photo in one or two sentences and picks 3–5 hashtags ([lib/caption.ts](lib/caption.ts)).
-  2. **Curation:** it chooses and orders about 20 songs from all the candidates ([lib/curate.ts](lib/curate.ts)).
+### Claude API (Anthropic): understanding the input and curating
+- **What:** Claude Sonnet 5.5 does two jobs per playlist:
+  1. **Search plan** ([lib/understand.ts](lib/understand.ts)): it works out what the photo or text refers to, then returns the hashtags, search phrases, mood tags, lyric words and seed songs that each source uses. For photos, it also writes the caption in the same call.
+  2. **Curation** ([lib/curate.ts](lib/curate.ts)): it chooses and orders about 20 songs from all the candidates.
 - **Why:**
-  - **Captions:** the original BLIP captioner is no longer hosted by Hugging Face's API, and its captions were short (a limitation noted in the 2024 report). Claude writes richer captions and picks hashtags directly. TextRank can't rank the words of one long sentence, because they all score the same.
-  - **Curation:** the sources return noisy matches. A song called "Coffee" isn't necessarily a coffee-shop song, and many TikTok sounds are creators' "original sound" clips rather than real songs. Claude judges mood, removes duplicates, limits each artist to two songs, recognizes which TikTok sounds are released songs, and fills gaps with well-known songs (at most a third of the list).
+  - **Search plan:** people type names, characters, shows, memes and aesthetics, not just scenes. Searching each word on its own misses the point: "maddy perez" means Euphoria, the baddie aesthetic and Maddy edit audios. Only a model with broad cultural knowledge can make that connection, and it also replaces BLIP, which Hugging Face's API no longer hosts and whose captions were short (a limitation the 2024 report notes).
+  - **Curation:** the sources return noisy matches. A song called "Coffee" isn't necessarily a coffee-shop song, and many TikTok sounds are creators' "original sound" clips rather than real songs. Claude judges fit and mood, removes duplicates, limits each artist to two songs, and recognises which TikTok sounds are released songs.
 - **How:**
   - **Request:** the Messages API through `@anthropic-ai/sdk`, with structured outputs. A Zod schema guarantees valid JSON.
-  - **Effort:** set to `low` for captions and `medium` for curation, to keep it fast.
+  - **Effort:** `low` for the search plan and `medium` for curation, to keep it fast.
   - **Refusals:** `fallbacks: "default"` re-runs a declined request on another Claude model.
-  - **Without a key:** text mode uses TextRank keywords, and a simple mix of the sources replaces curation.
+  - **Without a key:** TextRank keywords, with short inputs also kept whole, replace the search plan, and a simple mix of the sources replaces curation.
 - **Cost:** about $0.03–0.05 per playlist (see above). Sign up and add billing at [console.anthropic.com](https://console.anthropic.com).
 - **Key:** `ANTHROPIC_API_KEY`
 
 ### Apify TikTok scraper: trending sounds per hashtag
-- **What:** for up to 3 hashtags, it collects the sounds used in about 20 recent TikTok videos each, then ranks the sounds by how many videos use them ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
-- **Why:** TikTok is where songs trend, so a sound that keeps showing up under #beach fits a beach photo in a way lyrics matching can't. TikTok has no official API for this: the Research API is for approved academic researchers, and Creative Center has no API. That leaves third-party scrapers.
+- **What:** for the top 3 hashtags in the search plan, it collects the sounds used in about 20 recent TikTok videos each, then ranks the sounds by how many videos use them ([lib/sources/tiktok.ts](lib/sources/tiktok.ts)).
+- **Why:** TikTok is where songs trend. A sound that keeps showing up under #maddyperez or #beach fits in a way lyrics matching can't, which is why the hashtags come from the context-aware search plan rather than from splitting the input into words. TikTok has no official API for this: the Research API is for approved academic researchers, and Creative Center has no API. That leaves third-party scrapers.
 - **How:**
   - **Scraper:** one synchronous run of the [`clockworks/tiktok-scraper`](https://apify.com/clockworks/tiktok-scraper) actor via Apify's `run-sync-get-dataset-items` endpoint, with every media download turned off.
   - **Ranking:** sounds are grouped by name and artist, then counted.
@@ -101,19 +116,19 @@ The Claude figures are estimates: about 1,200 input and 500 output tokens per ca
 - **Keys:** `NEXT_PUBLIC_SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (from [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard))
 
 ### Last.fm API: songs listeners tagged with the keyword
-- **What:** `tag.getTopTracks` returns the top 10 tracks for each keyword's tag, such as "rain", "summer" or "roadtrip" ([lib/sources/music-apis.ts](lib/sources/music-apis.ts)).
+- **What:** `tag.getTopTracks` returns the top 10 tracks for each mood or genre tag in the search plan, such as "rnb", "dark pop" or "summer" ([lib/sources/music-apis.ts](lib/sources/music-apis.ts)).
 - **Why:** Last.fm tags come from real listeners and describe mood and setting, not just title words. That makes them the best match for "what does this scene sound like".
 - **Cost:** free for non-commercial use, with an API key.
 - **Key:** `LASTFM_API_KEY` (from [last.fm/api/account/create](https://www.last.fm/api/account/create))
 
 ### Genius API: title and lyric matches
-- **What:** a search that matches song titles and lyrics for each keyword, keeping the top 6 per keyword.
+- **What:** a search that matches song titles and lyrics for each search phrase, keeping the top 6 per phrase.
 - **Why:** it carries on the original project's lyrics-matching idea, using a live catalog instead of 20,000 songs.
 - **Cost:** free, with a client access token.
 - **Key:** `GENIUS_ACCESS_TOKEN` (from [genius.com/api-clients](https://genius.com/api-clients))
 
 ### Deezer API: keyword search
-- **What:** a public track search for each keyword, keeping the top 8 per keyword.
+- **What:** a public track search for each search phrase (e.g. "euphoria soundtrack"), keeping the top 8 per phrase.
 - **Why:** it needs no key, so the app always has popular, real tracks even with nothing configured.
 - **Cost:** free, no key.
 
@@ -145,8 +160,9 @@ app/
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
   manifest.ts, icon.tsx    home-screen install and app icon
 lib/
-  caption.ts               photo captioning (Claude vision, Hugging Face backup)
-  keywords.ts              TextRank keyword extraction
+  understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
+  caption.ts               image input + Hugging Face backup captioning
+  keywords.ts              TextRank keyword extraction (fallback without Claude)
   recommend.ts             lyrics TF-IDF lookup
   sources/                 TikTok (Apify), Last.fm, Genius, Deezer
   curate.ts                Claude playlist curation
@@ -219,7 +235,7 @@ npm run build:index
 The original Streamlit app ([legacy/Melodrip.py](legacy/Melodrip.py)), Colab notebook ([legacy/Melodrip.ipynb](legacy/Melodrip.ipynb)) and the figures below are kept in [legacy/](legacy/).
 
 ### Introduction:
-April 20th, 2024 was Whitman College’s first hackathon. At this hackathon, Saki Bishop and Yuttanawee Buahom decided to participate as a two person team. At this hackathon, various ideas were put out but we were having a hard time settling on an idea, and thus were quite stumped as to what we should do. As we were racking our brains to find something unique and interesting to do, we found various models on huggingface that turns images into text and also classified lyrics into a music genre. Considering how fun it can be to play around with image generators, we were curious if we could combine the ideas of image to text and text to genre/mood to create a music playlist for a submitted image. The idea is that we would input a photo, which would then be given a caption that would next be analyzed into a theme, and then finally be grouped together with other songs of similar themes. With the usage of models from huggingface, we figured it could be possible to easily implement this despite there being many moving parts in this program.
+April 20th, 2024 was Whitman College’s first hackathon. At this hackathon, Yuttanawee Buahom (Pure) took part with Melodrip. At this hackathon, various ideas were put out but we were having a hard time settling on an idea, and thus were quite stumped as to what we should do. As we were racking our brains to find something unique and interesting to do, we found various models on huggingface that turns images into text and also classified lyrics into a music genre. Considering how fun it can be to play around with image generators, we were curious if we could combine the ideas of image to text and text to genre/mood to create a music playlist for a submitted image. The idea is that we would input a photo, which would then be given a caption that would next be analyzed into a theme, and then finally be grouped together with other songs of similar themes. With the usage of models from huggingface, we figured it could be possible to easily implement this despite there being many moving parts in this program.
 With these hackathon roots in mind, we have named this program after our hackathon team name, melodrip, coming from the imagery of new songs dripping upon us through recommendation.
 
 ### Literature Review:

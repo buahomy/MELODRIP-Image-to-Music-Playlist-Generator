@@ -13,7 +13,7 @@ import {
 } from "@/lib/spotify-auth";
 
 type Mode = "image" | "text";
-type Analysis = { caption: string; keywords: string[]; preview: string | null };
+type Analysis = { caption: string; context?: string; keywords: string[]; preview: string | null };
 type Playlist = Extract<PlaylistEvent, { type: "playlist" }>;
 type SaveState = { status: "idle" | "saving" | "error" | "saved"; message?: string; url?: string };
 
@@ -134,7 +134,7 @@ export default function Home() {
         for (const line of lines.filter(Boolean)) {
           const event = JSON.parse(line) as PlaylistEvent;
           if (event.type === "analysis") {
-            setAnalysis({ caption: event.caption, keywords: event.keywords, preview });
+            setAnalysis({ caption: event.caption, context: event.context, keywords: event.keywords, preview });
             requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
           } else if (event.type === "status") setStatus(event.message);
           else if (event.type === "playlist") setPlaylist(event);
@@ -271,6 +271,7 @@ export default function Home() {
             )}
             <div className="seen-text">
               <p className="caption">“{analysis.caption}”</p>
+              {analysis.context && <p className="context">{analysis.context}</p>}
               {analysis.keywords.length > 0 && (
                 <div className="chips">
                   {analysis.keywords.map((k) => (
