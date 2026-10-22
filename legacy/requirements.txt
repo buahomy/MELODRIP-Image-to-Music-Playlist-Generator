@@ -1,0 +1,10 @@
+streamlit
+transformers==4.36.2
+torch
+Pillow
+requests
+nltk
+networkx
+scikit-learn
+matplotlib
+pandas
