@@ -13,6 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 nltk.download('punkt')
+nltk.download('punkt_tab')  # needed by word_tokenize in NLTK 3.8.2+
 nltk.download('stopwords')
 
 @st.cache_resource
