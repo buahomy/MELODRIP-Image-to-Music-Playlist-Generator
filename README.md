@@ -1,6 +1,6 @@
 # Melodrip
 ### Turn a photo or a few words into a playlist.
-**Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
+**Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
 Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now a mobile web app built to feel like a native iPhone app. Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
@@ -175,7 +175,7 @@ lib/
   spotify-auth.ts          browser Spotify login (PKCE) and saving
 data/lyrics-index.json     precomputed lyrics index
 scripts/build_index.py     builds the index from the Kaggle CSV
-legacy/                    original 2024 Streamlit app, Colab notebook, report figures
+legacy/                    original 2024 Streamlit app (+ its requirements.txt), Colab notebook, report figures
 ```
 
 ## Running it
@@ -233,6 +233,27 @@ npm run build:index
 - **Niche audio associations can still be missed.** The web lookup only finds songs that web pages mention alongside the subject, and the TikTok scraper only sees about 20 videos per query. A trend that lives mostly inside TikTok, such as a specific audio used in a character's edits, may not show up. Including the song or trend in the text you type, e.g. "maddy perez yo voy", gives the search a direct lead.
 - **Photo captions need the Anthropic key**, or Hugging Face credits for the backup captioner.
 - **Cost grows with use.** At about $0.12–0.16 per playlist, mostly TikTok scraping and Claude, the free tiers cover a few dozen playlists a month. Lower `TIKTOK_RESULTS_PER_HASHTAG` or turn sources off to reduce cost.
+
+## Original Streamlit version (2024)
+
+The first version of Melodrip is kept as it was built at the hackathon, and still runs as its own app: **[melodrip.streamlit.app](https://melodrip.streamlit.app)**.
+
+| | Original (2024) | Current |
+|---|---|---|
+| App | Streamlit, [legacy/Melodrip.py](legacy/Melodrip.py) | Next.js on Vercel (iOS-style web app) |
+| Input | An image URL | Photo (camera, library or link) or typed text |
+| Captioning | BLIP (`Salesforce/blip-image-captioning-large`), run locally with PyTorch | Claude vision |
+| Keywords | TextRank | Claude search plan (TextRank as fallback) |
+| Songs | TF-IDF + cosine similarity over a 10,000-song sample of the Kaggle lyrics | TikTok, Last.fm, Genius, Deezer, web lookup and the lyrics index, curated by Claude |
+| Output | Top 5 song titles and scores | About 20 songs on Spotify, saveable as a playlist |
+
+**Run it locally** (needs Python 3.11 and about 2 GB for the BLIP model on first run):
+```bash
+pip install -r legacy/requirements.txt
+streamlit run legacy/Melodrip.py
+```
+
+**Hosting on Streamlit Community Cloud:** the app at melodrip.streamlit.app deploys from this repo. Its main file path must be `legacy/Melodrip.py`, set under the app's ⋮ menu → **Settings**. Streamlit Cloud installs the `requirements.txt` in the same folder. It doesn't need any of the API keys the new app uses.
 
 ---
 
