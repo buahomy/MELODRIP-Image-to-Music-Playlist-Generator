@@ -3,6 +3,8 @@
 // D-minor lullaby (a breathy whistle voice over soft choir-like pad chords).
 // The melody is an original tune; everything is synthesised in the browser.
 
+import { resumeOnReturn, setPlaybackAudioSession } from "./ios";
+
 type Ctx = AudioContext;
 
 function newContext(): Ctx {
@@ -47,7 +49,9 @@ class SeaAudio {
       if (this.ctx.state === "suspended") await this.ctx.resume();
       return;
     }
+    setPlaybackAudioSession(); // play even with the iPhone on silent
     const ctx = (this.ctx = newContext());
+    resumeOnReturn(() => this.ctx);
     if (ctx.state === "suspended") await ctx.resume();
     const t = ctx.currentTime;
 

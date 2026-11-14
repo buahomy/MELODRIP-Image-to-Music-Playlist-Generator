@@ -3,6 +3,8 @@
 // the view triggers on every full turn of the wheel. Everything is synthesised;
 // no audio files are loaded.
 
+import { resumeOnReturn, setPlaybackAudioSession } from "./ios";
+
 type Ctx = AudioContext;
 
 function newContext(): Ctx {
@@ -40,7 +42,9 @@ class BowlAudio {
       if (this.ctx.state === "suspended") await this.ctx.resume();
       return;
     }
+    setPlaybackAudioSession(); // play even with the iPhone on silent
     const ctx = (this.ctx = newContext());
+    resumeOnReturn(() => this.ctx);
     if (ctx.state === "suspended") await ctx.resume();
     const t = ctx.currentTime;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { seaAudio } from "@/lib/therapy/sea-audio";
+import { useWakeLock } from "@/lib/therapy/ios";
 import { BackButton, Icon, useCanvasLoop, useFullscreen } from "./shared";
 
 // Anxious / deep-sleep mode: a sunken stepped temple glowing under the sea,
@@ -44,6 +45,9 @@ export function SeaView({ onBack }: { onBack: () => void }) {
 
   const bubbles = useRef<Bubble[]>([]);
   const specks = useRef<Speck[]>([]);
+
+  // Keep the iPhone awake while playing; iOS stops web audio when the screen locks.
+  useWakeLock(started && darkness < 1);
 
   useEffect(() => () => seaAudio.stop(), []);
 

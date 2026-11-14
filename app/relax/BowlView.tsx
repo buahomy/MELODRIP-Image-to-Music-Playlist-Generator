@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { bowlAudio } from "@/lib/therapy/bowl-audio";
+import { useWakeLock } from "@/lib/therapy/ios";
 import { BackButton, Icon, useCanvasLoop, useFullscreen } from "./shared";
 
 // Headache / migraine mode: a golden eight-spoked wheel turns once every 7 s
@@ -29,6 +30,9 @@ export function BowlView({ onBack }: { onBack: () => void }) {
   const lastTime = useRef(0);
   const lastProgress = useRef(-1);
   const live = useRef(false); // count turns and chime only once the session has started
+
+  // Keep the iPhone awake while playing; iOS stops web audio when the screen locks.
+  useWakeLock(started);
 
   useEffect(() => () => bowlAudio.stop(), []);
 
