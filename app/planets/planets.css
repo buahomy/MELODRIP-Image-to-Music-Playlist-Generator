@@ -379,3 +379,10 @@
 .sp-preset span {
   font-size: 26px;
 }
+
+.sp-titlerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

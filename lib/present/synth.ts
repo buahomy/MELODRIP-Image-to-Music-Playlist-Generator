@@ -530,3 +530,30 @@ export const pureTone = (freq: number, level = 0.25): Layer => (ctx, out) => {
   o.start();
   return () => { o.stop(); shimmer.stop(); };
 };
+
+// ======================= elements =======================
+
+/** Play several layers as one. */
+export const combine = (...layers: Layer[]): Layer => (ctx, out, bank) => {
+  const stops = layers.map((l) => l(ctx, out, bank));
+  return () => stops.forEach((s) => s());
+};
+
+/** Earth: a deep ground rumble with soil crumbling and the odd pebble settling. */
+export const soil: Layer = (ctx, out, bank) => {
+  const n = stereoNoise(ctx, bank, "brown");
+  const f = ctx.createBiquadFilter();
+  f.type = "lowpass"; f.frequency.value = 130; f.Q.value = 1.5;
+  const g = ctx.createGain();
+  g.gain.value = 0.7;
+  const heave = lfo(ctx, 0.06, 0.25, g.gain);
+  n.node.connect(f).connect(g).connect(out);
+  const crumble = scatter(ctx, 14, (t) => burst(ctx, bank, out, t, { type: "bandpass", freq: rand(700, 2400), q: 1.2, peak: rand(0.02, 0.09), decay: rand(0.01, 0.04) }));
+  const pebbles = scatter(ctx, 0.5, (t) => {
+    const pan = rand(-0.7, 0.7);
+    for (let k = 0; k < 2 + Math.floor(Math.random() * 3); k++) {
+      burst(ctx, bank, out, t + k * rand(0.05, 0.12), { type: "bandpass", freq: rand(1800, 3200), q: 5, peak: rand(0.1, 0.25), decay: 0.02, pan });
+    }
+  });
+  return () => { n.stop(); heave.stop(); crumble(); pebbles(); };
+};

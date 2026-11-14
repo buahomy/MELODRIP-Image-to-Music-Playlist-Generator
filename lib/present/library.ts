@@ -168,3 +168,96 @@ export const SECTIONS: Section[] = [
 ];
 
 export const ALL_SOUNDS = new Map(SECTIONS.flatMap((s) => s.sounds.map((x) => [x.id, x] as const)));
+
+// ======================= frequencies for activities =======================
+// Tones and brainwave bands people use for particular activities. These come
+// from sound-healing traditions and early research; effects vary by person.
+
+export type Activity = { id: string; title: string; purpose: string; band: string; emoji: string; sound: Sound };
+
+const act = (id: string, title: string, purpose: string, band: string, emoji: string, build: Sound["build"], headphones = false): Activity => ({
+  id, title, purpose, band, emoji, sound: { id: `act-${id}`, name: title, emoji, blurb: purpose, headphones, build },
+});
+
+export const ACTIVITIES: Activity[] = [
+  act("meditate", "Meditation", "Clear your thoughts and settle the mind", "432 → 528 Hz", "🧘",
+    () => [L("432 Hz", pureTone(432), 0.55), L("528 Hz", pureTone(528), 0.4), L("Singing bowl", bowl(108), 0.25), L("Soft noise", noise("pink", { type: "lowpass", freq: 900 }), 0.15)]),
+  act("focus", "Study · Focus", "Calm, steady attention for reading and writing", "Alpha · 8–12 Hz", "📖",
+    () => [L("Alpha 10 Hz binaural", binaural(200, 10), 0.5), L("Alpha 10 Hz pulses", isochronic(220, 10), 0.15), L("Brown noise", noise("brown"), 0.35)], true),
+  act("memory", "Study · Memorization", "Help ideas link up when you're learning and recalling", "Gamma · 40 Hz", "🧠",
+    () => [L("40 Hz pulses", isochronic(240, 40), 0.45), L("40 Hz binaural", binaural(210, 40), 0.3), L("Pink noise", noise("pink", { type: "lowpass", freq: 2500 }), 0.2)], true),
+  act("concentrate", "Problem Solving", "Alert, active concentration for maths and tricky tasks", "Beta · 14–30 Hz", "🧩",
+    () => [L("Beta 18 Hz binaural", binaural(240, 18), 0.45), L("Beta 15 Hz pulses", isochronic(250, 15), 0.15), L("Steady rain", rush(2000, 0.5), 0.3)], true),
+  act("create", "Creativity", "Loose, dreamy thinking for ideas and daydreams", "Theta · 4–8 Hz", "🎨",
+    () => [L("Theta 6 Hz binaural", binaural(150, 6), 0.5), L("Warm chord", pad([146.83, 220, 293.66, 369.99]), 0.3), L("Chimes", bells([587.33, 659.25, 739.99, 880, 987.77], 0.12, 5), 0.2)], true),
+  act("sleep", "Deep Sleep", "Slow everything down for rest and recovery", "Delta · 0.5–4 Hz", "😴",
+    () => [L("Delta 2 Hz binaural", binaural(110, 2), 0.45), L("Brown noise", noise("brown"), 0.45), L("Slow waves", waves(12), 0.25)], true),
+  act("release", "Let Go", "Release worry, guilt and fear", "396 Hz", "🕊️",
+    () => [L("396 Hz", pureTone(396), 0.55), L("Bowl", bowl(99), 0.25), L("Breeze", wind(450), 0.15)]),
+  act("ease", "Ease Tension", "Soften physical tension and aches", "174 Hz", "💆",
+    () => [L("174 Hz", pureTone(174), 0.6), L("Low bowl", bowl(87), 0.25), L("Warm noise", noise("brown", { type: "lowpass", freq: 400 }), 0.2)]),
+];
+
+export const STUDY_PLAYLIST = {
+  title: "Brain",
+  url: "https://open.spotify.com/playlist/649GtTDvKVAUMTCKoONsJ7",
+  embed: "https://open.spotify.com/embed/playlist/649GtTDvKVAUMTCKoONsJ7?utm_source=generator&theme=0",
+};
+
+// ======================= mood board =======================
+
+export type Feeling = { id: string; label: string; emoji: string; sounds: string[]; activity?: string };
+export const FEELINGS: Feeling[] = [
+  { id: "anxious", label: "Anxious", emoji: "😰", sounds: ["ocean-breath", "healing-stream", "cat-purr", "safe-place"], activity: "release" },
+  { id: "stressed", label: "Stressed", emoji: "😣", sounds: ["healing-stream", "night-rain", "singing-bowls", "ocean-breath"], activity: "release" },
+  { id: "overwhelmed", label: "Overwhelmed", emoji: "🫠", sounds: ["ocean-breath", "deep-chant", "calm-lake", "zen-garden"], activity: "meditate" },
+  { id: "cant-sleep", label: "Can't sleep", emoji: "🥱", sounds: ["rain-tent", "distant-storm", "box-fan", "waterfall"], activity: "sleep" },
+  { id: "tired", label: "Tired", emoji: "😴", sounds: ["fireside", "calm-lake", "underwater"], activity: "sleep" },
+  { id: "sad", label: "Sad", emoji: "😔", sounds: ["sunny", "marimbas", "brook-walk", "mood-purr"] },
+  { id: "lonely", label: "Lonely", emoji: "🫂", sounds: ["mood-purr", "safe-place", "fireside", "sunny"] },
+  { id: "scattered", label: "Scattered", emoji: "🌀", sounds: ["focus-noise", "steady-rain", "focus-beats"], activity: "focus" },
+  { id: "studying", label: "Studying", emoji: "📚", sounds: ["focus-beats", "steady-rain", "focus-noise"], activity: "memory" },
+  { id: "restless", label: "Restless", emoji: "😤", sounds: ["stormy", "waterfall", "deep-chant"], activity: "ease" },
+  { id: "tense", label: "Tense / achy", emoji: "💢", sounds: ["singing-bowls", "deep-chant", "fireside"], activity: "ease" },
+  { id: "ringing", label: "Ringing ears", emoji: "👂", sounds: ["notched", "summer-night", "white-rain"] },
+  { id: "meditate", label: "Want to meditate", emoji: "🧘", sounds: ["singing-bowls", "temple-bells", "deep-chant", "zen-garden"], activity: "meditate" },
+  { id: "creative", label: "Want ideas", emoji: "💡", sounds: ["aeolian", "zen-garden", "marimbas"], activity: "create" },
+  { id: "happy", label: "Happy", emoji: "😊", sounds: ["marimbas", "sunny", "brook-walk"] },
+  { id: "baby", label: "Baby won't settle", emoji: "👶", sounds: ["womb", "shusher", "underwater"] },
+];
+
+export type MoodColor = { id: string; name: string; hex: string; element: "earth" | "water" | "wind" | "fire"; sounds: string[] };
+export const MOOD_COLORS: MoodColor[] = [
+  { id: "red", name: "Red", hex: "#ff5a6e", element: "fire", sounds: ["stormy", "fireside"] },
+  { id: "orange", name: "Orange", hex: "#ff9f5a", element: "fire", sounds: ["fireside", "marimbas"] },
+  { id: "yellow", name: "Yellow", hex: "#ffd25a", element: "wind", sounds: ["sunny", "marimbas"] },
+  { id: "green", name: "Green", hex: "#7ee08a", element: "earth", sounds: ["healing-stream", "zen-garden", "brook-walk"] },
+  { id: "teal", name: "Teal", hex: "#5ad2c8", element: "water", sounds: ["calm-lake", "healing-stream"] },
+  { id: "blue", name: "Blue", hex: "#6aa8ff", element: "water", sounds: ["ocean-breath", "night-rain", "rain-tent"] },
+  { id: "purple", name: "Purple", hex: "#b388ff", element: "wind", sounds: ["aeolian", "singing-bowls", "deep-chant"] },
+  { id: "pink", name: "Pink", hex: "#ff8fd8", element: "earth", sounds: ["cat-purr", "safe-place", "sunny"] },
+  { id: "grey", name: "Grey", hex: "#9aa0b8", element: "wind", sounds: ["steady-rain", "box-fan", "focus-noise"] },
+  { id: "black", name: "Dark", hex: "#3a2f5c", element: "earth", sounds: ["underwater", "deep-chant", "distant-storm"] },
+];
+
+/** Rank library sounds for a mood: feelings count most, then colours, then energy. */
+export function recommend(feelings: string[], colors: string[], energy: number) {
+  const score = new Map<string, number>();
+  const add = (id: string, w: number) => score.set(id, (score.get(id) ?? 0) + w);
+  for (const f of FEELINGS.filter((x) => feelings.includes(x.id))) f.sounds.forEach((id, i) => add(id, 3 - i * 0.4));
+  for (const c of MOOD_COLORS.filter((x) => colors.includes(x.id))) c.sounds.forEach((id, i) => add(id, 1.2 - i * 0.2));
+  // wired → calmer, steadier sounds; drained → gentle lift
+  const calming = ["ocean-breath", "waterfall", "deep-chant", "calm-lake", "rain-tent", "box-fan"];
+  const lifting = ["sunny", "marimbas", "brook-walk", "healing-stream"];
+  if (energy > 0.65) calming.forEach((id) => add(id, (energy - 0.6) * 2));
+  if (energy < 0.35) lifting.forEach((id) => add(id, (0.4 - energy) * 2));
+  return [...score.entries()]
+    .filter(([id]) => ALL_SOUNDS.has(id))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id]) => ALL_SOUNDS.get(id)!);
+}
+
+export function sectionOf(soundId: string) {
+  return SECTIONS.find((s) => s.sounds.some((x) => x.id === soundId))!;
+}

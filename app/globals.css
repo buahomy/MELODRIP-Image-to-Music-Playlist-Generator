@@ -928,3 +928,129 @@ select {
     transition: none !important;
   }
 }
+
+/* ---- Element orb: layer Earth / Water / Wind / Fire onto any audio ---- */
+.el-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: conic-gradient(from 220deg, #c99a6b, #6ad0ff, #cfe0ff, #ff8a4c, #c99a6b);
+  box-shadow: 0 0 10px rgba(255, 170, 230, 0.35);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.2s, box-shadow 0.3s;
+  touch-action: manipulation;
+}
+.el-orb::after {
+  /* a bigger invisible tap area for small fingers */
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+.el-orb-core {
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, rgba(255, 255, 255, 0.35) 45%, rgba(40, 20, 120, 0.55) 100%);
+}
+.el-orb:hover,
+.el-orb.open,
+.el-orb.on {
+  opacity: 1;
+  box-shadow: 0 0 16px rgba(255, 170, 230, 0.65), 0 0 2px #fff;
+}
+.el-orb.open {
+  transform: scale(1.12) rotate(25deg);
+}
+.el-orb-dots {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  display: flex;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+.el-orb-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  box-shadow: 0 0 5px currentColor;
+}
+
+.el-bloom {
+  position: fixed;
+  z-index: 1000;
+  width: 0;
+  height: 0;
+}
+.el-bloom-label {
+  position: absolute;
+  translate: -50% -50%;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(20, 12, 60, 0.85);
+  border: 1px solid rgba(225, 205, 255, 0.25);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.el-pick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  padding: 0;
+  border: 1.5px solid color-mix(in srgb, var(--ec) 45%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ec) 35%, #2a1670), rgba(20, 12, 60, 0.92) 75%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(8, 3, 30, 0.55);
+  color: #fff;
+  cursor: pointer;
+  transform: translate(var(--dx), var(--dy));
+  animation: el-bloom 0.38s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+.el-pick span {
+  font-size: 20px;
+  line-height: 1;
+}
+.el-pick small {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  color: rgba(244, 238, 255, 0.85);
+}
+.el-pick.on {
+  border-color: var(--ec);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ec) 25%, transparent), 0 0 18px color-mix(in srgb, var(--ec) 60%, transparent);
+}
+.el-pick.strong {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ec) 75%, #fff), color-mix(in srgb, var(--ec) 40%, #2a1670) 75%);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ec) 35%, transparent), 0 0 28px var(--ec);
+}
+.el-pick:active {
+  transform: translate(var(--dx), var(--dy)) scale(0.9);
+}
+@keyframes el-bloom {
+  from {
+    transform: translate(0, 0) scale(0.2);
+    opacity: 0;
+  }
+}

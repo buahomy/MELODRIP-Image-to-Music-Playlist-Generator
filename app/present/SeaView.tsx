@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { seaAudio } from "@/lib/therapy/sea-audio";
 import { useWakeLock } from "@/lib/therapy/ios";
 import { BackButton, Icon, useCanvasLoop, useFullscreen } from "./shared";
+import { ElementDial } from "@/app/ElementDial";
+import { useElementActive } from "@/lib/elements/fx";
 
 // Anxious / deep-sleep mode: a sunken stepped temple glowing under the sea,
 // with drifting plankton and rising bubbles. Ocean swells and a slow lullaby
@@ -48,6 +50,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
 
   // Keep the iPhone awake while playing; iOS stops web audio when the screen locks.
   useWakeLock(started && darkness < 1);
+  useElementActive("scene-sea", started && darkness < 1); // elements fade out with the sleep timer
 
   useEffect(() => () => seaAudio.stop(), []);
 
@@ -355,6 +358,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
           <p><Icon name="sparkle" size={12} /> Ocean swells · sea lullaby</p>
         </div>
         <div className="rx-tools">
+          <ElementDial audioId="scene-sea" label="Sunken temple" size={40} />
           <button className={`rx-pill rx-breathe${breathing ? " on" : ""}`} onClick={() => setBreathing(!breathing)}
             aria-pressed={breathing} aria-label="Box breathing guide">
             <Icon name="wind" size={15} />

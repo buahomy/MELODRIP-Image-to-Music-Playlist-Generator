@@ -23,6 +23,12 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 **Dive deeper**
 - Under **Make Playlist**, a crystal koi hovers over a glowing lotus pond (looping video, 3D koi drawn with three.js, its body bending in a swimming wave). Tap the water to make ripples and startle it; pick **Present**, **Beat Lab** or **Planets** and the koi dives in before the next page opens. The video and model (about 11 MB together) load only when the card scrolls into view and pause when it's off screen. The pond video, still and koi model are third-party assets loaded from their original hosts.
 
+- **Mood board.** Pick up to three colours for your mood, the feelings you have and your energy (drained to wired). The board fills with your colours and feeling stickers, then **Find my sound** ranks the library for you; tap a match to jump to it and play. Your colour suggests an element (blue → Water, red → Fire, green → Earth…) and your feelings suggest a frequency.
+- **Frequencies for what you're doing.** Meditation (432 → 528 Hz), Study · Focus (alpha 8–12 Hz), Study · Memorization (gamma 40 Hz), Problem Solving (beta 14–30 Hz), Creativity (theta 4–8 Hz), Deep Sleep (delta 0.5–4 Hz), Let Go (396 Hz) and Ease Tension (174 Hz), each playable in the app with its own mix, plus the **Brain** study playlist embedded from Spotify. Effects come from sound-healing traditions and early research and vary by person.
+
+**Elements on every audio** (inspired by A Soft Murmur)
+- Every audio in the app (all library sounds, the frequency tracks, both Present scenes, Beat Lab and Sound Planets) has a small four-colour orb. Hover or tap it and 🪨 Earth, 💧 Water, 🌬️ Wind and 🔥 Fire bloom out; tap one to layer it on: off → soft → strong. Each audio remembers its own elements, which fade in when it plays and out when it stops. Elements are synthesised too ([lib/elements/fx.ts](lib/elements/fx.ts)).
+
 **Play: Sound Planets** (for kids)
 - A circular take on a loop machine. Eight animal planets orbit a smiling sun; each one sings its note every time it crosses the ⭐ music line. Faster and slower orbits drift in and out of step, so kids *see* polyrhythms. Tap a planet to wake it up, tap the sun to play. Notes come from a pentatonic scale so everything sounds nice; pick from six sounds (bell, flute, beep, pluck, drum, shaker), a 🎲 chance to sing and a ✨ wiggle. **Surprise**, three ready-made songs, and **Record** to save your song (shares to Files on iPhone). Keys 1–8 wake planets on a keyboard.
 
@@ -189,6 +195,7 @@ app/
   planets/                 Sound Planets, the kids' circular loop machine
   beats/                   Beat Lab: 3D ring stage, step grid, groove model controls
   KoiPortal.tsx            "Dive deeper" koi pond under the Make Playlist button
+  ElementDial.tsx          the element orb (Earth / Water / Wind / Fire) used on every audio
   manifest.ts, icon.png    home-screen install; app icon and favicon (neon orb)
 lib/
   understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
@@ -202,6 +209,7 @@ lib/
   therapy/                 Web Audio engines for the bowl drone and ocean + lullaby; iOS audio helpers
   present/                 sound library: synth layers, catalogue by section, player
   planets/                 Sound Planets engine: looping voices, beat clock, recorder
+  elements/                element textures layered over any audio, remembered per audio
   koi/                     the crystal koi: model loading, swim shader, dive
   beatlab/                 drum synth + scheduler, groove model (TensorFlow.js), 3D ring (three.js), patterns
 data/lyrics-index.json     precomputed lyrics index

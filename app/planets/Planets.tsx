@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NOTES, PLANET_LOOKS, PRESETS, PlanetEngine, SOUNDS, type Planet, type SoundId } from "@/lib/planets/engine";
 import { useWakeLock } from "@/lib/therapy/ios";
+import { ElementDial } from "@/app/ElementDial";
+import { useElementActive } from "@/lib/elements/fx";
 
 // Sound Planets: eight animal planets orbit a smiling sun. Each one sings its
 // note whenever it crosses the glowing music line at the top. Slow and fast
@@ -30,6 +32,7 @@ export default function Planets() {
   selectedRef.current = selected;
 
   useWakeLock(playing); // iOS stops web audio when the phone auto-locks
+  useElementActive("planets", playing); // nature sounds around the planets
 
   const say = useCallback((m: string) => {
     setToast(m);
@@ -418,9 +421,12 @@ export default function Planets() {
     <main className="sp screen">
       <header className="sp-top">
         <Link href="/" className="sp-back">‹ Melodrip</Link>
-        <h1>
-          Sound <span className="serif glow-text">planets</span>
-        </h1>
+        <div className="sp-titlerow">
+          <h1>
+            Sound <span className="serif glow-text">planets</span>
+          </h1>
+          <ElementDial audioId="planets" label="Sound Planets" size={40} />
+        </div>
         <p>Tap a planet to wake it up. It sings when it passes the ⭐ line!</p>
       </header>
 

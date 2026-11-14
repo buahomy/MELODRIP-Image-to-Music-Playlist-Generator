@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { bowlAudio } from "@/lib/therapy/bowl-audio";
 import { useWakeLock } from "@/lib/therapy/ios";
 import { BackButton, Icon, useCanvasLoop, useFullscreen } from "./shared";
+import { ElementDial } from "@/app/ElementDial";
+import { useElementActive } from "@/lib/elements/fx";
 
 // Headache / migraine mode: a golden eight-spoked wheel turns once every 7 s
 // over a meditating figure in a starfield. Each full turn strikes the bowl and
@@ -33,6 +35,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
 
   // Keep the iPhone awake while playing; iOS stops web audio when the screen locks.
   useWakeLock(started);
+  useElementActive("scene-bowl", started); // Earth/Water/Wind/Fire layered on top
 
   useEffect(() => () => bowlAudio.stop(), []);
 
@@ -380,6 +383,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
           <p><Icon name="sparkle" size={12} /> 108 Hz bowl drone · chime every turn</p>
         </div>
         <div className="rx-tools">
+          <ElementDial audioId="scene-bowl" label="Singing bowl" size={40} />
           <button className="rx-pill rx-icon" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>
             <Icon name={muted ? "mute" : "volume"} />
           </button>

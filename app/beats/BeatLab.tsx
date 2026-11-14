@@ -7,6 +7,8 @@ import { GrooveModel, type Progress } from "@/lib/beatlab/model";
 import { CORPUS, GENRES, GENRE_BPM, N, STEPS, VOICES, decodeCode, encodeCode } from "@/lib/beatlab/patterns";
 import type { Ring } from "@/lib/beatlab/ring";
 import { useWakeLock } from "@/lib/therapy/ios";
+import { ElementDial } from "@/app/ElementDial";
+import { useElementActive } from "@/lib/elements/fx";
 
 // Beat Lab (from SoundPal): a 16-step drum sequencer drawn as a 3D pop-it ring,
 // with a small neural network, trained on the phone, that completes, varies or
@@ -46,6 +48,7 @@ export default function BeatLab() {
   });
 
   useWakeLock(playing); // iOS stops web audio when the phone auto-locks
+  useElementActive("beat-lab", playing); // Earth/Water/Wind/Fire under the beat
 
   // ---- helpers ----
   const toastTimer = useRef(0);
@@ -279,6 +282,7 @@ export default function BeatLab() {
           <button className="bl-play" onClick={togglePlay} aria-label={playing ? "Stop" : "Play"}>
             <svg viewBox="0 0 24 24" aria-hidden><path d={playing ? STOP : PLAY} /></svg>
           </button>
+          <span className="bl-elements"><ElementDial audioId="beat-lab" label="Beat Lab" size={34} /></span>
           <div className="bl-dials">
             <Dial label="Tempo" min={60} max={180} step={1} value={bpm} out={String(bpm)}
               onChange={(v) => { setBpm(v); setCode(encodeCode(engine.grid, v)); }} />
