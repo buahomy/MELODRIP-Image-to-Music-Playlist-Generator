@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PlaylistEvent, PlaylistSong } from "./api/playlist/route";
 import { SOURCE_LABELS, type Source } from "@/lib/sources/types";
@@ -352,6 +353,18 @@ export default function Home() {
           )}
         </section>
       )}
+
+      <Link href="/relax" className="relax-link">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.jpg" alt="" />
+        <span className="relax-link-text">
+          <span className="relax-link-title">Relax</span>
+          <span className="relax-link-sub">Sound therapy for headaches and sleep</span>
+        </span>
+        <svg className="chevron" width="8" height="14" viewBox="0 0 8 14" aria-hidden>
+          <path d="M1 1l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </Link>
 
       <footer className="footnote">Sources: TikTok, Last.fm, Genius, Deezer, and lyrics · curated by Claude</footer>
     </main>

@@ -462,6 +462,41 @@ textarea {
   font-size: 15px;
 }
 
+/* Entry row to the sound-therapy page (/relax) */
+.relax-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card);
+  color: inherit;
+  text-decoration: none;
+}
+.relax-link:active {
+  background: var(--fill);
+}
+.relax-link img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.relax-link-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.relax-link-title {
+  font-size: 17px;
+}
+.relax-link-sub {
+  color: var(--secondary);
+  font-size: 13px;
+}
+
 .footnote {
   margin-top: 32px;
   text-align: center;

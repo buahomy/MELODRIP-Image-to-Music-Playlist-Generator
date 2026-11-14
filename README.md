@@ -8,6 +8,7 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 - **Photo or Text toggle.** Caption a photo (taken with the camera, picked from the library, or pasted as a link), or skip captioning and type a scene or mood directly.
 - **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it, plus a one-line reason.
 - **Save to Spotify** creates the playlist in your Spotify account. **Copy Spotify Links** works for anyone: paste the links into a Spotify playlist on desktop.
+- **Relax: sound therapy.** Brought over from SoundPal. Open **Relax** at the bottom of the home screen and pick how you feel. *Headache / migraine* plays a singing-bowl drone, and a bell rings each time a golden wheel turns over a starfield. *Anxious / deep sleep* plays ocean swells and a lullaby over a sunken temple, each with its own volume slider, plus a 4-4-4-4 box breathing guide and a sleep timer that dims the screen and fades the sound out. All the audio is generated in the browser with the Web Audio API, so it needs no audio files, keys or network.
 - **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon and follows light and dark mode.
 
 ## How it works
@@ -163,7 +164,8 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
 app/
   page.tsx                 iOS-style UI (Photo/Text toggle, results, save/copy)
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
-  manifest.ts, icon.tsx    home-screen install and app icon
+  relax/                   sound therapy: feeling picker, singing-bowl and sunken-temple scenes
+  manifest.ts, icon.png    home-screen install; app icon and favicon (Buddha logo)
 lib/
   understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
   caption.ts               image input + Hugging Face backup captioning
@@ -173,7 +175,9 @@ lib/
   curate.ts                Claude playlist curation
   spotify.ts               server-side Spotify search
   spotify-auth.ts          browser Spotify login (PKCE) and saving
+  therapy/                 Web Audio engines for the bowl drone and ocean + lullaby
 data/lyrics-index.json     precomputed lyrics index
+public/logo.jpg            in-app logo
 scripts/build_index.py     builds the index from the Kaggle CSV
 legacy/                    original 2024 Streamlit app (+ its requirements.txt), Colab notebook, report figures
 ```
