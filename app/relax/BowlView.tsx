@@ -76,19 +76,19 @@ export function BowlView({ onBack }: { onBack: () => void }) {
 
       // 1. Deep-space background and drifting blue nebulae
       const bg = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(w, h) * 0.85);
-      bg.addColorStop(0, "#0a122c");
-      bg.addColorStop(0.35, "#060a1e");
-      bg.addColorStop(0.7, "#030511");
-      bg.addColorStop(1, "#010207");
+      bg.addColorStop(0, "#1d0f4a");
+      bg.addColorStop(0.35, "#130a38");
+      bg.addColorStop(0.7, "#0b0626");
+      bg.addColorStop(1, "#06031a");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
 
       const nt = time * 0.0004;
       const nebulae: [number, number, number, string][] = [
-        [cx + Math.sin(nt) * 80, cy - 60 + Math.cos(nt * 0.8) * 50, R * 3.2, "30, 64, 175, 0.22"],
-        [cx - 120 + Math.cos(nt * 0.7) * 70, cy + 80 + Math.sin(nt) * 60, R * 2.8, "56, 189, 248, 0.14"],
-        [cx + 140 + Math.sin(nt * 0.5) * 60, cy + 100 + Math.cos(nt * 0.6) * 70, R * 2.5, "99, 102, 241, 0.16"],
-        [cx, cy, R * 2.2, "14, 165, 233, 0.18"],
+        [cx + Math.sin(nt) * 80, cy - 60 + Math.cos(nt * 0.8) * 50, R * 3.2, "111, 90, 255, 0.24"],
+        [cx - 120 + Math.cos(nt * 0.7) * 70, cy + 80 + Math.sin(nt) * 60, R * 2.8, "255, 120, 210, 0.14"],
+        [cx + 140 + Math.sin(nt * 0.5) * 60, cy + 100 + Math.cos(nt * 0.6) * 70, R * 2.5, "192, 112, 255, 0.18"],
+        [cx, cy, R * 2.2, "141, 148, 255, 0.18"],
       ];
       for (const [x, y, r, rgba] of nebulae) {
         const g = ctx.createRadialGradient(x, y, 10, x, y, r);
@@ -109,8 +109,8 @@ export function BowlView({ onBack }: { onBack: () => void }) {
         if (s.x < 0) s.x = w;
         if (s.x > w) s.x = 0;
         const a = Math.max(0.1, s.alpha + Math.sin(time * 0.002 * s.speed + s.phase) * 0.35);
-        ctx.fillStyle = `rgba(186, 230, 253, ${a})`;
-        ctx.shadowColor = "rgba(125, 211, 252, 0.8)";
+        ctx.fillStyle = `rgba(240, 220, 255, ${a})`;
+        ctx.shadowColor = "rgba(255, 160, 230, 0.8)";
         ctx.shadowBlur = s.size * 3;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, TAU);
@@ -124,9 +124,9 @@ export function BowlView({ onBack }: { onBack: () => void }) {
       const by = cy + 18;
       const pulse = Math.sin(time * 0.0018) * 0.08 + 0.92;
       const aura = ctx.createRadialGradient(cx, by - 70 * k, 15, cx, by - 40 * k, R * 1.8 * pulse);
-      aura.addColorStop(0, "rgba(147, 197, 253, 0.35)");
-      aura.addColorStop(0.3, "rgba(59, 130, 246, 0.22)");
-      aura.addColorStop(0.7, "rgba(30, 58, 138, 0.12)");
+      aura.addColorStop(0, "rgba(220, 170, 255, 0.35)");
+      aura.addColorStop(0.3, "rgba(160, 100, 255, 0.22)");
+      aura.addColorStop(0.7, "rgba(80, 40, 160, 0.12)");
       aura.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = aura;
       ctx.beginPath();
@@ -137,17 +137,17 @@ export function BowlView({ onBack }: { onBack: () => void }) {
       ctx.scale(k, k);
       const halo = ctx.createRadialGradient(0, -95, 5, 0, -95, 45);
       halo.addColorStop(0, "rgba(254, 240, 138, 0.4)");
-      halo.addColorStop(0.5, "rgba(96, 165, 250, 0.25)");
+      halo.addColorStop(0.5, "rgba(200, 140, 255, 0.25)");
       halo.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = halo;
       ctx.beginPath();
       ctx.arc(0, -95, 45, 0, TAU);
       ctx.fill();
 
-      ctx.fillStyle = "rgba(7, 18, 48, 0.72)";
-      ctx.strokeStyle = "rgba(147, 197, 253, 0.55)";
+      ctx.fillStyle = "rgba(22, 10, 60, 0.72)";
+      ctx.strokeStyle = "rgba(230, 180, 255, 0.55)";
       ctx.lineWidth = 2.2;
-      ctx.shadowColor = "rgba(96, 165, 250, 0.6)";
+      ctx.shadowColor = "rgba(200, 130, 255, 0.6)";
       ctx.shadowBlur = 16;
       ctx.beginPath();
       ctx.arc(0, -112, 6, 0, TAU);
@@ -171,7 +171,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
 
       ctx.beginPath();
       ctx.ellipse(0, 22, 14, 7, 0, 0, TAU);
-      ctx.fillStyle = "rgba(191, 219, 254, 0.45)";
+      ctx.fillStyle = "rgba(240, 210, 255, 0.45)";
       ctx.fill();
       ctx.stroke();
 
@@ -197,7 +197,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
         ctx.beginPath();
         ctx.arc(cx, cy, ring.r, 0, TAU);
         ctx.stroke();
-        ctx.strokeStyle = `rgba(56, 189, 248, ${ring.alpha * 0.5})`;
+        ctx.strokeStyle = `rgba(255, 143, 216, ${ring.alpha * 0.5})`;
         ctx.lineWidth = 1.8 * ring.alpha;
         ctx.beginPath();
         ctx.arc(cx, cy, ring.r * 0.88, 0, TAU);
@@ -334,7 +334,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
       ctx.stroke();
 
       const spiral = hub * 0.65;
-      ["#38bdf8", "#fbbf24", "#ef4444"].forEach((color, s) => {
+      ["#8d94ff", "#ffc27a", "#ff8fd8"].forEach((color, s) => {
         ctx.save();
         ctx.rotate((s * TAU) / 3);
         ctx.beginPath();
@@ -376,7 +376,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
       <header className="rx-header">
         <BackButton onBack={onBack} tone="gold" />
         <div className="rx-title rx-gold">
-          <h1>Singing Bowl</h1>
+          <h1>Singing <span className="serif">bowl</span></h1>
           <p><Icon name="sparkle" size={12} /> 108 Hz bowl drone · chime every turn</p>
         </div>
         <div className="rx-tools">
@@ -413,7 +413,7 @@ export function BowlView({ onBack }: { onBack: () => void }) {
         <div className="rx-overlay">
           <div className="rx-card rx-card-gold">
             <div className="rx-card-icon"><Icon name="sparkle" size={30} /></div>
-            <h2>Cosmic Meditation</h2>
+            <h2>Cosmic <span className="serif glow-text">meditation</span></h2>
             <p>
               Ease headaches and tension with the warm, slow harmonics of a singing bowl. A bell rings each time the
               golden wheel completes a turn: breathe out with it.

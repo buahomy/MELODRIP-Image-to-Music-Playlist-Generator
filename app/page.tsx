@@ -40,6 +40,14 @@ async function downscale(file: File): Promise<string> {
   }
 }
 
+function Chevron() {
+  return (
+    <svg className="chevron" width="8" height="14" viewBox="0 0 8 14" aria-hidden>
+      <path d="M1 1l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function songLink(song: PlaylistSong) {
   return song.spotify?.url ?? `https://open.spotify.com/search/${encodeURIComponent(`${song.title} ${song.artist}`)}`;
 }
@@ -187,9 +195,16 @@ export default function Home() {
   return (
     <main className="screen">
       <header className="nav">
-        <h1>Melodrip</h1>
-        <p>Turn a moment into a playlist.</p>
+        <div className="nav-brand">
+          <span className="orb" aria-hidden /> Melodrip
+        </div>
+        <h1>
+          Music for every <span className="serif glow-text">moment.</span>
+        </h1>
+        <p>Find a playlist from a photo or a few words, unwind with sound therapy, or make a beat with AI.</p>
       </header>
+
+      <h2 className="group-title" style={{ marginTop: 8 }}>Find · a playlist for this moment</h2>
 
       <div className="segmented" role="tablist" aria-label="Input type">
         <span className="segmented-thumb" data-pos={mode} aria-hidden />
@@ -354,19 +369,45 @@ export default function Home() {
         </section>
       )}
 
-      <Link href="/relax" className="relax-link">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.jpg" alt="" />
-        <span className="relax-link-text">
-          <span className="relax-link-title">Relax</span>
-          <span className="relax-link-sub">Sound therapy for headaches and sleep</span>
-        </span>
-        <svg className="chevron" width="8" height="14" viewBox="0 0 8 14" aria-hidden>
-          <path d="M1 1l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </Link>
+      <h2 className="group-title">Feel &amp; make</h2>
+      <nav className="features" aria-label="More in Melodrip">
+        <Link href="/relax" className="feature-link">
+          <span className="feature-icon">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.jpg" alt="" />
+          </span>
+          <span className="feature-text">
+            <span className="feature-tag">Feel</span>
+            <span className="feature-title">Relax</span>
+            <span className="feature-sub">Singing bowl for headaches, ocean lullaby for sleep</span>
+          </span>
+          <Chevron />
+        </Link>
+        <Link href="/beats" className="feature-link">
+          <span className="feature-icon beats" aria-hidden>
+            <svg width="34" height="34" viewBox="0 0 34 34">
+              {[13, 9, 5].map((r, k) => (
+                <circle key={r} cx="17" cy="17" r={r} fill="none" stroke={["#9b8cff", "#ff8fd8", "#7fd6ff"][k]} strokeOpacity="0.5" />
+              ))}
+              {[0, 90, 180, 270, 45, 225].map((a, k) => {
+                const r = k < 4 ? 13 : 9;
+                const x = 17 + r * Math.sin((a * Math.PI) / 180);
+                const y = 17 - r * Math.cos((a * Math.PI) / 180);
+                return <circle key={a} cx={x} cy={y} r="2.2" fill={k < 4 ? "#9b8cff" : "#ff8fd8"} />;
+              })}
+              <circle cx="17" cy="17" r="2.6" fill="#fff" opacity="0.9" />
+            </svg>
+          </span>
+          <span className="feature-text">
+            <span className="feature-tag">Make</span>
+            <span className="feature-title">Beat Lab</span>
+            <span className="feature-sub">Pop a 3D drum ring; an on-device AI fills in the groove</span>
+          </span>
+          <Chevron />
+        </Link>
+      </nav>
 
-      <footer className="footnote">Sources: TikTok, Last.fm, Genius, Deezer, and lyrics · curated by Claude</footer>
+      <footer className="footnote">Playlists from TikTok, Last.fm, Genius, Deezer &amp; lyrics · curated by Claude<br />Relax &amp; Beat Lab run entirely on your phone</footer>
     </main>
   );
 }

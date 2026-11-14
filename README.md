@@ -1,15 +1,28 @@
 # Melodrip
-### Turn a photo or a few words into a playlist.
+### Find music for any moment, unwind with sound therapy, and make beats with AI.
 **Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
-Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now a mobile web app built to feel like a native iPhone app. Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
+Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now an iPhone home-screen app with three parts: **Find** a playlist for a photo or a few words, **Feel** better with sound therapy, and **Make** beats with an on-device AI. For playlists, Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
 ## Features
+**Find: playlists**
 - **Photo or Text toggle.** Caption a photo (taken with the camera, picked from the library, or pasted as a link), or skip captioning and type a scene or mood directly.
 - **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it, plus a one-line reason.
 - **Save to Spotify** creates the playlist in your Spotify account. **Copy Spotify Links** works for anyone: paste the links into a Spotify playlist on desktop.
-- **Relax: sound therapy.** Brought over from SoundPal. Open **Relax** at the bottom of the home screen and pick how you feel. *Headache / migraine* plays a singing-bowl drone, and a bell rings each time a golden wheel turns over a starfield. *Anxious / deep sleep* plays ocean swells and a lullaby over a sunken temple, each with its own volume slider, plus a 4-4-4-4 box breathing guide and a sleep timer that dims the screen and fades the sound out. All the audio is generated in the browser with the Web Audio API, so it needs no audio files, keys or network.
-- **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon and follows light and dark mode.
+
+**Feel: Relax**
+- **Sound therapy.** Brought over from SoundPal. Open **Relax** under *Feel & make* on the home screen and pick how you feel. *Headache / migraine* plays a singing-bowl drone, and a bell rings each time a golden wheel turns over a starfield. *Anxious / deep sleep* plays ocean swells and a lullaby over a sunken temple, each with its own volume slider, plus a 4-4-4-4 box breathing guide and a sleep timer that dims the screen and fades the sound out. All the audio is generated in the browser with the Web Audio API, so it needs no audio files, keys or network.
+
+**Make: Beat Lab**
+- **A 3D pop-it drum ring.** Five rings of glowing bubbles (kick, snare, clap, open and closed hat) around 16 steps. Tap a bubble to pop it, drag to orbit, tap the core to play. A light wedge sweeps with the playhead and every hit ripples. A step grid underneath mirrors the ring for precise editing, with mute and solo per drum, tempo, swing and volume.
+- **An AI that learns on your phone.** A small neural network (TensorFlow.js) trains on 24 classic grooves in eight styles the first time you open Beat Lab, then is saved on the device. It can **Complete** your pattern, **Vary** it, or **Dream** a new one in a chosen style, and it softly lights the bubbles where it expects the next hit. **Creativity** controls how adventurous it is.
+- **Share a beat as text.** Every pattern has a short code (`sp-…`) you can copy, paste and open, or add after `/beats#` in a link.
+- The drum kit is synthesised live with Web Audio; no samples, keys or network needed.
+
+**Everywhere**
+- **Glowy violet theme.** Deep navy-violet night, frosted-glass cards and a periwinkle-to-pink glow, set in Inter Tight with Instrument Serif italic accents and Fira Code labels.
+- **Built for iPhone.** Sound plays even with the silent switch on, the screen stays awake while music plays (iOS stops web audio on auto-lock), audio resumes after calls or app switches, and layouts respect the notch and home indicator.
+- **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon (the watercolour Buddha).
 
 ## How it works
 
@@ -157,6 +170,7 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
 - **Vercel:** hosts the site and runs the API. It's connected to this repository, builds every push to `main` automatically, and stores the production keys. It's free on the Hobby plan, which is for non-commercial projects.
 - **Framework and libraries:**
   - **App:** Next.js 16 (App Router), React 19 and TypeScript.
+  - **Beat Lab:** three.js (3D ring, bloom) and TensorFlow.js (groove model), both loaded only on that page.
   - **Server libraries:** `@anthropic-ai/sdk` and `zod` for Claude, and `stemmer` (Porter stemmer) for TextRank keywords.
 
 ## Project structure
@@ -165,6 +179,7 @@ app/
   page.tsx                 iOS-style UI (Photo/Text toggle, results, save/copy)
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
   relax/                   sound therapy: feeling picker, singing-bowl and sunken-temple scenes
+  beats/                   Beat Lab: 3D ring stage, step grid, groove model controls
   manifest.ts, icon.png    home-screen install; app icon and favicon (Buddha logo)
 lib/
   understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
@@ -175,7 +190,8 @@ lib/
   curate.ts                Claude playlist curation
   spotify.ts               server-side Spotify search
   spotify-auth.ts          browser Spotify login (PKCE) and saving
-  therapy/                 Web Audio engines for the bowl drone and ocean + lullaby
+  therapy/                 Web Audio engines for the bowl drone and ocean + lullaby; iOS audio helpers
+  beatlab/                 drum synth + scheduler, groove model (TensorFlow.js), 3D ring (three.js), patterns
 data/lyrics-index.json     precomputed lyrics index
 public/logo.jpg            in-app logo
 scripts/build_index.py     builds the index from the Kaggle CSV

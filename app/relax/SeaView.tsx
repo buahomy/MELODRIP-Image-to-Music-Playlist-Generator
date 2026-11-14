@@ -122,7 +122,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         phase: Math.random() * Math.PI * 2,
         alpha: Math.random() * 0.45 + 0.2,
       }));
-      const colors = ["45, 212, 191", "56, 189, 248", "251, 191, 36", "52, 211, 153"];
+      const colors = ["255, 143, 216", "155, 140, 255", "255, 194, 122", "127, 214, 255"];
       specks.current = Array.from({ length: Math.min(80, Math.floor((w * h) / 14000)) }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -137,10 +137,10 @@ export function SeaView({ onBack }: { onBack: () => void }) {
     (ctx, w, h, time) => {
       // 1. Water column and swaying light shafts
       const sea = ctx.createLinearGradient(0, 0, 0, h);
-      sea.addColorStop(0, "#042235");
-      sea.addColorStop(0.35, "#021a2a");
-      sea.addColorStop(0.7, "#02121d");
-      sea.addColorStop(1, "#010910");
+      sea.addColorStop(0, "#1a0d4a");
+      sea.addColorStop(0.35, "#120a3a");
+      sea.addColorStop(0.7, "#0b0628");
+      sea.addColorStop(1, "#05031a");
       ctx.fillStyle = sea;
       ctx.fillRect(0, 0, w, h);
 
@@ -149,9 +149,9 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         const x0 = (w / 7) * (i + 1) + Math.sin(t) * 60;
         const x1 = x0 + Math.sin(t * 0.7) * 140;
         const ray = ctx.createLinearGradient(x0, 0, x1, h * 0.85);
-        ray.addColorStop(0, "rgba(45, 212, 191, 0.14)");
-        ray.addColorStop(0.4, "rgba(56, 189, 248, 0.06)");
-        ray.addColorStop(1, "rgba(2, 26, 42, 0)");
+        ray.addColorStop(0, "rgba(190, 150, 255, 0.15)");
+        ray.addColorStop(0.4, "rgba(255, 143, 216, 0.06)");
+        ray.addColorStop(1, "rgba(18, 10, 58, 0)");
         ctx.fillStyle = ray;
         ctx.beginPath();
         ctx.moveTo(x0 - 30, 0);
@@ -166,7 +166,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
       const base = h * 0.88;
       const cx = w * 0.5;
       ctx.save();
-      ctx.fillStyle = "#011522";
+      ctx.fillStyle = "#0d0730";
       ctx.beginPath();
       ctx.moveTo(0, h);
       ctx.lineTo(0, base - 60);
@@ -184,9 +184,9 @@ export function SeaView({ onBack }: { onBack: () => void }) {
       const left = cx - pw / 2;
       const top = base - ph;
       const stone = ctx.createLinearGradient(0, top, 0, base);
-      stone.addColorStop(0, "#05293d");
-      stone.addColorStop(0.5, "#021824");
-      stone.addColorStop(1, "#010c14");
+      stone.addColorStop(0, "#24135a");
+      stone.addColorStop(0.5, "#160b40");
+      stone.addColorStop(1, "#0a0524");
       for (let t = 0; t < 5; t++) {
         const tw = pw * (1 - t * 0.16);
         const th = ph / 5;
@@ -197,9 +197,9 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         ctx.fillRect(tx, ty, tw, th + 1);
 
         const glow = Math.sin(time * 0.0012 + t) * 0.25 + 0.75;
-        ctx.strokeStyle = `rgba(45, 212, 191, ${0.45 * glow})`;
+        ctx.strokeStyle = `rgba(255, 143, 216, ${0.5 * glow})`;
         ctx.lineWidth = 2.2;
-        ctx.shadowColor = "rgba(45, 212, 191, 0.8)";
+        ctx.shadowColor = "rgba(255, 143, 216, 0.85)";
         ctx.shadowBlur = 10;
         ctx.beginPath();
         ctx.moveTo(tx + 12, ty + 4);
@@ -223,13 +223,13 @@ export function SeaView({ onBack }: { onBack: () => void }) {
       const aw = pw * 0.22;
       const ah = ph * 0.26;
       const ay = top - ah;
-      ctx.fillStyle = "#021824";
+      ctx.fillStyle = "#160b40";
       ctx.fillRect(cx - aw / 2, ay, aw, ah);
       const ap = Math.sin(time * 0.002) * 0.2 + 0.8;
       const apex = ctx.createRadialGradient(cx, ay + ah / 2, 4, cx, ay + ah / 2, 60);
       apex.addColorStop(0, `rgba(251, 191, 36, ${0.9 * ap})`);
-      apex.addColorStop(0.4, `rgba(45, 212, 191, ${0.6 * ap})`);
-      apex.addColorStop(1, "rgba(4, 34, 53, 0)");
+      apex.addColorStop(0.4, `rgba(192, 112, 255, ${0.65 * ap})`);
+      apex.addColorStop(1, "rgba(20, 10, 60, 0)");
       ctx.fillStyle = apex;
       ctx.beginPath();
       ctx.arc(cx, ay + ah / 2, 60, 0, Math.PI * 2);
@@ -239,11 +239,11 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         const pH = ph * 0.85;
         const pY = base - pH;
         ctx.shadowBlur = 0;
-        ctx.fillStyle = "#021b29";
+        ctx.fillStyle = "#170c45";
         ctx.fillRect(px - 14, pY, 28, pH);
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+        ctx.strokeStyle = "rgba(155, 140, 255, 0.7)";
         ctx.lineWidth = 2;
-        ctx.shadowColor = "rgba(56, 189, 248, 0.9)";
+        ctx.shadowColor = "rgba(155, 140, 255, 0.95)";
         ctx.shadowBlur = 8;
         for (let y = pY + 12; y < base - 8; y += 22) {
           ctx.beginPath();
@@ -254,8 +254,8 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         ctx.shadowBlur = 0;
         const orb = ctx.createRadialGradient(px, pY - 6, 2, px, pY - 6, 18);
         orb.addColorStop(0, "#fef08a");
-        orb.addColorStop(0.5, "#2dd4bf");
-        orb.addColorStop(1, "rgba(45, 212, 191, 0)");
+        orb.addColorStop(0.5, "#ff8fd8");
+        orb.addColorStop(1, "rgba(255, 143, 216, 0)");
         ctx.fillStyle = orb;
         ctx.beginPath();
         ctx.arc(px, pY - 6, 18, 0, Math.PI * 2);
@@ -287,9 +287,9 @@ export function SeaView({ onBack }: { onBack: () => void }) {
           b.y = h + 10;
           b.x = Math.random() * w;
         }
-        ctx.strokeStyle = `rgba(165, 243, 252, ${b.alpha})`;
+        ctx.strokeStyle = `rgba(230, 210, 255, ${b.alpha})`;
         ctx.lineWidth = 1.2;
-        ctx.fillStyle = `rgba(45, 212, 191, ${b.alpha * 0.18})`;
+        ctx.fillStyle = `rgba(192, 112, 255, ${b.alpha * 0.18})`;
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
         ctx.fill();
@@ -313,16 +313,16 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         const by = h * 0.43;
         ctx.save();
         const halo = ctx.createRadialGradient(bx, by, 15, bx, by, r * 1.4);
-        halo.addColorStop(0, "rgba(45, 212, 191, 0.4)");
-        halo.addColorStop(0.6, "rgba(56, 189, 248, 0.15)");
-        halo.addColorStop(1, "rgba(14, 165, 233, 0)");
+        halo.addColorStop(0, "rgba(255, 143, 216, 0.4)");
+        halo.addColorStop(0.6, "rgba(155, 140, 255, 0.16)");
+        halo.addColorStop(1, "rgba(111, 120, 255, 0)");
         ctx.fillStyle = halo;
         ctx.beginPath();
         ctx.arc(bx, by, r * 1.4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "rgba(165, 243, 252, 0.85)";
+        ctx.strokeStyle = "rgba(255, 214, 241, 0.9)";
         ctx.lineWidth = 2.5;
-        ctx.shadowColor = "rgba(45, 212, 191, 0.9)";
+        ctx.shadowColor = "rgba(255, 143, 216, 0.95)";
         ctx.shadowBlur = 18;
         ctx.beginPath();
         ctx.arc(bx, by, r, 0, Math.PI * 2);
@@ -351,7 +351,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
       <header className="rx-header">
         <BackButton onBack={onBack} tone="sea" />
         <div className="rx-title rx-sea">
-          <h1>Sunken Temple</h1>
+          <h1>Sunken <span className="serif">temple</span></h1>
           <p><Icon name="sparkle" size={12} /> Ocean swells · sea lullaby</p>
         </div>
         <div className="rx-tools">
@@ -411,7 +411,7 @@ export function SeaView({ onBack }: { onBack: () => void }) {
         <div className="rx-overlay">
           <div className="rx-card rx-card-sea">
             <div className="rx-card-icon"><Icon name="moon" size={30} /></div>
-            <h2>Deep Sleep Sanctuary</h2>
+            <h2>Deep sleep <span className="serif glow-text">sanctuary</span></h2>
             <p>
               Sink into a quiet underwater city. Slow ocean swells and a soft lullaby help your body settle into
               deep, restful sleep.

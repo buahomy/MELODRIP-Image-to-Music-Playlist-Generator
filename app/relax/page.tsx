@@ -48,8 +48,10 @@ export default function Relax() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.jpg" alt="" />
           <div>
-            <h1>Relax</h1>
-            <p>Sound therapy, made in your browser.</p>
+            <h1>
+              <span className="serif glow-text">Relax.</span>
+            </h1>
+            <p>Sound therapy, made live on your phone.</p>
           </div>
         </div>
       </header>
@@ -57,10 +59,12 @@ export default function Relax() {
       <h2 className="group-title">How are you feeling?</h2>
       <div className="rx-choices">
         <button className="rx-choice rx-choice-gold" onClick={() => open("headache")}>
+          <span className="rx-choice-tag">01 · Singing bowl</span>
           <span className="rx-choice-title">Headache / migraine</span>
           <span className="rx-choice-sub">Singing bowl drone with a chime on every turn of a golden wheel</span>
         </button>
         <button className="rx-choice rx-choice-sea" onClick={() => open("sleep")}>
+          <span className="rx-choice-tag">02 · Sunken temple</span>
           <span className="rx-choice-title">Anxious / deep sleep</span>
           <span className="rx-choice-sub">Ocean swells and a lullaby, box breathing and a sleep timer</span>
         </button>
