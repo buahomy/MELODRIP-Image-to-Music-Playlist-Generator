@@ -1,8 +1,11 @@
 # Melodrip
 ### Find music for any moment, unwind with sound therapy, and make beats with AI.
-**Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
-**📽️ Walkthrough deck:** [Melodrip: Feature Tutorials & How I Built It](https://docs.google.com/presentation/d/1144KlMxni9_EKGvId52p83H77lNTnCExXvWbanpXHIk/edit?usp=sharing) (Google Slides: a tutorial for every feature with real screens, plus how it was built with AI tools). The same development story is in [How I built it](#how-i-built-it-development-process-and-ai) below.
+[![Melodrip walkthrough deck: tap to open the slides](docs/deck-preview.jpg)](https://docs.google.com/presentation/d/1144KlMxni9_EKGvId52p83H77lNTnCExXvWbanpXHIk/edit?usp=sharing)
+
+**📽️ [Open the walkthrough deck](https://docs.google.com/presentation/d/1144KlMxni9_EKGvId52p83H77lNTnCExXvWbanpXHIk/edit?usp=sharing)** · Google Slides: a short tutorial for every feature with real screens, plus how it was built with AI tools ([summary below](#how-i-built-it-development-process-and-ai)).
+
+**Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
 Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now an iPhone home-screen app with four parts: **Find** a playlist for a photo or a few words, **Feel** present with sound therapy, **Make** beats with an on-device AI, and **Play** with Sound Planets, a music toy for kids. For playlists, Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
