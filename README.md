@@ -19,6 +19,9 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 - **Share a beat as text.** Every pattern has a short code (`sp-…`) you can copy, paste and open, or add after `/beats#` in a link.
 - The drum kit is synthesised live with Web Audio; no samples, keys or network needed.
 
+**Dive deeper**
+- Under **Make Playlist**, a crystal koi hovers over a glowing lotus pond (looping video, 3D koi drawn with three.js, its body bending in a swimming wave). Tap the water to make ripples and startle it; pick **Relax** or **Beat Lab** and the koi dives in before the next page opens. The video and model (about 11 MB together) load only when the card scrolls into view and pause when it's off screen. The pond video, still and koi model are third-party assets loaded from their original hosts.
+
 **Everywhere**
 - **Glowy violet theme.** Deep navy-violet night, frosted-glass cards and a periwinkle-to-pink glow, set in Inter Tight with Instrument Serif italic accents and Fira Code labels.
 - **Built for iPhone.** Sound plays even with the silent switch on, the screen stays awake while music plays (iOS stops web audio on auto-lock), audio resumes after calls or app switches, and layouts respect the notch and home indicator.
@@ -180,6 +183,7 @@ app/
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
   relax/                   sound therapy: feeling picker, singing-bowl and sunken-temple scenes
   beats/                   Beat Lab: 3D ring stage, step grid, groove model controls
+  KoiPortal.tsx            "Dive deeper" koi pond under the Make Playlist button
   manifest.ts, icon.png    home-screen install; app icon and favicon (Buddha logo)
 lib/
   understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
@@ -191,6 +195,7 @@ lib/
   spotify.ts               server-side Spotify search
   spotify-auth.ts          browser Spotify login (PKCE) and saving
   therapy/                 Web Audio engines for the bowl drone and ocean + lullaby; iOS audio helpers
+  koi/                     the crystal koi: model loading, swim shader, dive
   beatlab/                 drum synth + scheduler, groove model (TensorFlow.js), 3D ring (three.js), patterns
 data/lyrics-index.json     precomputed lyrics index
 public/logo.jpg            in-app logo

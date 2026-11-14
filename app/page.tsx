@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PlaylistEvent, PlaylistSong } from "./api/playlist/route";
 import { SOURCE_LABELS, type Source } from "@/lib/sources/types";
+import { KoiPortal } from "./KoiPortal";
 import {
   completeSpotifyLogin,
   savePlaylist,
@@ -277,6 +278,9 @@ export default function Home() {
         {loading ? <span className="spinner" aria-label="Loading" /> : "Make Playlist"}
       </button>
 
+      {/* the koi sits under the button; once a playlist is showing it moves below the results */}
+      {!analysis && <KoiPortal />}
+
       {analysis && (
         <section ref={resultsRef} className="results">
           <h2 className="group-title">{analysis.preview ? "What We Saw" : "What You Said"}</h2>
@@ -368,6 +372,8 @@ export default function Home() {
           )}
         </section>
       )}
+
+      {analysis && <KoiPortal />}
 
       <h2 className="group-title">Feel &amp; make</h2>
       <nav className="features" aria-label="More in Melodrip">
