@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BowlView } from "./BowlView";
 import { SeaView } from "./SeaView";
+import { SoundLibrary } from "./SoundLibrary";
 
-// Sound therapy (from SoundPal): ask how you feel, then open the matching scene.
+// Present: sound therapy. Two full-screen scenes (from SoundPal) and a library
+// of therapy soundscapes grouped by what they help with.
 // The scene is kept in the URL hash so the phone's back gesture returns here.
 
 type Scene = "headache" | "sleep";
@@ -14,7 +16,7 @@ const readHash = (): Scene | null => {
   return h === "headache" || h === "sleep" ? h : null;
 };
 
-export default function Relax() {
+export default function Present() {
   const [scene, setScene] = useState<Scene | null>(null);
   const openedHere = useRef(false);
 
@@ -49,9 +51,9 @@ export default function Relax() {
           <img src="/logo.jpg" alt="" />
           <div>
             <h1>
-              <span className="serif glow-text">Relax.</span>
+              <span className="serif glow-text">Present.</span>
             </h1>
-            <p>Sound therapy, made live on your phone.</p>
+            <p>Be here now. Scenes and soundscapes for sleep, calm, focus and feeling better.</p>
           </div>
         </div>
       </header>
@@ -72,6 +74,8 @@ export default function Relax() {
       <p className="group-footer">
         Use headphones at a gentle volume. This is for relaxation and isn&apos;t a medical treatment.
       </p>
+
+      <SoundLibrary onOpenScene={open} />
     </main>
   );
 }

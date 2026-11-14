@@ -6,7 +6,7 @@ import type { Koi } from "@/lib/koi/scene";
 
 // "Dive deeper": a glowing lotus pond with a crystal koi hovering over the
 // water. Pick a destination and the koi dives in, the pond ripples, and you
-// land in Relax or Beat Lab. Nothing heavy loads until the card is on screen.
+// land in Present, Beat Lab or Sound Planets. Nothing heavy loads until the card is on screen.
 
 const POND_VIDEO =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261104_160514_d8369d6e-d8ba-4532-9751-b32e0c8aaf75.mp4";
@@ -16,8 +16,9 @@ const POND_STILL =
 type Ripple = { id: number; x: number; y: number; big?: boolean };
 
 const DESTINATIONS = [
-  { href: "/relax", tag: "Feel", title: "Relax", sub: "Sound therapy" },
+  { href: "/present", tag: "Feel", title: "Present", sub: "Sound therapy" },
   { href: "/beats", tag: "Make", title: "Beat Lab", sub: "AI drum ring" },
+  { href: "/planets", tag: "Play", title: "Planets", sub: "For kids" },
 ] as const;
 
 export function KoiPortal() {
@@ -124,7 +125,7 @@ export function KoiPortal() {
         <h2>
           Dive <span className="serif glow-text">deeper.</span>
         </h2>
-        <p className="koi-sub">Follow the koi to sound therapy or the beat lab.</p>
+        <p className="koi-sub">Follow the koi to sound therapy, the beat lab, or the kids&apos; planets.</p>
         <div className="koi-doors">
           {DESTINATIONS.map((d) => (
             <a key={d.href} href={d.href} className={`koi-door${diving === d.href ? " active" : ""}`}

@@ -1,0 +1,381 @@
+/* Sound Planets (/planets): big, bright, friendly. Built on the shared violet
+   glass theme, with rainbow note colours and chunky tap targets for small fingers. */
+
+.sp-top {
+  padding: 22px 4px 14px;
+}
+.sp-back {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.sp-top h1 {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.sp-top h1 .serif {
+  font-size: 1.1em;
+}
+.sp-top p {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.sp-stage {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: 6px auto 0;
+}
+.sp-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(225, 205, 255, 0.25), 0 0 60px rgba(192, 112, 255, 0.35), 0 0 120px rgba(255, 143, 216, 0.15);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.sp-tapsun {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 15%);
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(20, 12, 60, 0.65);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #fff6c2;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: sp-bob 1.6s ease-in-out infinite;
+}
+@keyframes sp-bob {
+  50% {
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
+.sp-toast {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(30, 18, 80, 0.85);
+  border: 1px solid rgba(255, 210, 245, 0.35);
+  box-shadow: 0 10px 30px rgba(8, 3, 30, 0.5);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: sp-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes sp-pop {
+  from {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* chunky transport buttons */
+.sp-transport {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.sp-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 76px;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  background: var(--glass);
+  box-shadow: var(--glass-shadow);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.sp-big span {
+  font-size: 26px;
+  line-height: 1;
+}
+.sp-big:active {
+  transform: scale(0.92);
+}
+.sp-play {
+  background: var(--glow);
+  border-color: transparent;
+  box-shadow: 0 12px 30px rgba(190, 90, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.sp-rec.on {
+  border-color: rgba(255, 107, 139, 0.7);
+  background: rgba(255, 107, 139, 0.22);
+  animation: sp-recglow 1.2s ease-in-out infinite;
+}
+@keyframes sp-recglow {
+  50% {
+    box-shadow: 0 0 24px rgba(255, 107, 139, 0.6);
+  }
+}
+
+.sp-tempo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  font-size: 26px;
+}
+.sp-tempo input {
+  flex: 1;
+  accent-color: var(--pink);
+  height: 30px;
+}
+
+.sp-chips {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+.sp-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid rgba(200, 190, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(70, 52, 160, 0.25);
+  font-size: 22px;
+  cursor: pointer;
+  filter: grayscale(0.7) opacity(0.65);
+  transition: transform 0.15s, filter 0.2s, border-color 0.2s;
+}
+.sp-chip.on {
+  filter: none;
+  background: color-mix(in srgb, var(--pc) 22%, transparent);
+  border-color: color-mix(in srgb, var(--pc) 55%, transparent);
+}
+.sp-chip[aria-selected="true"] {
+  border-color: #fff;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--pc) 50%, transparent);
+}
+.sp-chip small {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-3);
+}
+
+.sp-card {
+  margin-top: 12px;
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 18%, transparent), rgba(60, 40, 150, 0.12));
+  border: 1px solid color-mix(in srgb, var(--pc) 35%, transparent);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+}
+.sp-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sp-card-emoji {
+  font-size: 54px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--pc) 60%, transparent));
+}
+.sp-switch {
+  min-height: 52px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(120, 110, 170, 0.35);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.2s;
+}
+.sp-switch.on {
+  background: var(--glow);
+  box-shadow: 0 8px 22px rgba(190, 90, 255, 0.4);
+}
+.sp-switch:active {
+  transform: scale(0.94);
+}
+.sp-label {
+  margin: 18px 2px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sp-label small {
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-2);
+}
+
+.sp-sounds {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sp-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 2px solid rgba(200, 190, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(70, 52, 160, 0.22);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), border-color 0.2s, background 0.2s;
+}
+.sp-pill span {
+  font-size: 20px;
+}
+.sp-pill.on {
+  border-color: #fff;
+  background: color-mix(in srgb, var(--pc, var(--pink)) 30%, transparent);
+}
+.sp-pill:active {
+  transform: scale(0.94);
+}
+
+/* the xylophone: one bar per note, shorter as they get higher */
+.sp-notes {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+}
+.sp-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nc) 85%, #fff), var(--nc));
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.15);
+  color: rgba(30, 10, 60, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.2s;
+}
+.sp-bar.on {
+  opacity: 1;
+  transform: translateY(-4px);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.15), 0 0 0 3px #fff, 0 8px 20px color-mix(in srgb, var(--nc) 60%, transparent);
+}
+.sp-bar:active {
+  transform: scale(0.9);
+}
+
+.sp-speed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 22px;
+}
+.sp-dot {
+  flex: 1;
+  min-width: 0;
+  max-width: 44px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid rgba(200, 190, 255, 0.2);
+  border-radius: 50%;
+  background: rgba(70, 52, 160, 0.22);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.sp-dot.on {
+  border-color: #fff;
+  background: color-mix(in srgb, var(--pc) 55%, transparent);
+  color: #fff;
+  transform: scale(1.12);
+}
+
+.sp-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+.sp-slider {
+  display: grid;
+  grid-template-columns: 86px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.sp-slider input {
+  width: 100%;
+  accent-color: var(--pc);
+  height: 28px;
+}
+.sp-slider output {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.sp-extras .sp-pill {
+  align-self: flex-start;
+}
+
+.sp-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sp-preset {
+  flex-direction: column;
+  min-height: 74px;
+  gap: 4px;
+  font-size: 13.5px;
+}
+.sp-preset span {
+  font-size: 26px;
+}

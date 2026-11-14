@@ -375,17 +375,17 @@ export default function Home() {
 
       {analysis && <KoiPortal />}
 
-      <h2 className="group-title">Feel &amp; make</h2>
+      <h2 className="group-title">Feel, make &amp; play</h2>
       <nav className="features" aria-label="More in Melodrip">
-        <Link href="/relax" className="feature-link">
+        <Link href="/present" className="feature-link">
           <span className="feature-icon">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.jpg" alt="" />
           </span>
           <span className="feature-text">
             <span className="feature-tag">Feel</span>
-            <span className="feature-title">Relax</span>
-            <span className="feature-sub">Singing bowl for headaches, ocean lullaby for sleep</span>
+            <span className="feature-title">Present</span>
+            <span className="feature-sub">Soundscapes for sleep, calm, focus, tinnitus and low days</span>
           </span>
           <Chevron />
         </Link>
@@ -411,9 +411,18 @@ export default function Home() {
           </span>
           <Chevron />
         </Link>
+        <Link href="/planets" className="feature-link">
+          <span className="feature-icon planets" aria-hidden>🪐</span>
+          <span className="feature-text">
+            <span className="feature-tag">Play · for kids</span>
+            <span className="feature-title">Sound Planets</span>
+            <span className="feature-sub">Animal planets sing as they orbit the sun</span>
+          </span>
+          <Chevron />
+        </Link>
       </nav>
 
-      <footer className="footnote">Playlists from TikTok, Last.fm, Genius, Deezer &amp; lyrics · curated by Claude<br />Relax &amp; Beat Lab run entirely on your phone</footer>
+      <footer className="footnote">Playlists from TikTok, Last.fm, Genius, Deezer &amp; lyrics · curated by Claude<br />Present, Beat Lab &amp; Planets run entirely on your phone</footer>
     </main>
   );
 }

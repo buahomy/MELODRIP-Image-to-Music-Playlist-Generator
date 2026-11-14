@@ -2,7 +2,7 @@
 ### Find music for any moment, unwind with sound therapy, and make beats with AI.
 **Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
-Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now an iPhone home-screen app with three parts: **Find** a playlist for a photo or a few words, **Feel** better with sound therapy, and **Make** beats with an on-device AI. For playlists, Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
+Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now an iPhone home-screen app with four parts: **Find** a playlist for a photo or a few words, **Feel** present with sound therapy, **Make** beats with an on-device AI, and **Play** with Sound Planets, a music toy for kids. For playlists, Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
 ## Features
 **Find: playlists**
@@ -10,8 +10,9 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 - **Side-by-side results.** Your photo appears next to its caption and hashtags, followed by about 20 songs with album art. Each song shows a label for the source that suggested it, plus a one-line reason.
 - **Save to Spotify** creates the playlist in your Spotify account. **Copy Spotify Links** works for anyone: paste the links into a Spotify playlist on desktop.
 
-**Feel: Relax**
-- **Sound therapy.** Brought over from SoundPal. Open **Relax** under *Feel & make* on the home screen and pick how you feel. *Headache / migraine* plays a singing-bowl drone, and a bell rings each time a golden wheel turns over a starfield. *Anxious / deep sleep* plays ocean swells and a lullaby over a sunken temple, each with its own volume slider, plus a 4-4-4-4 box breathing guide and a sleep timer that dims the screen and fades the sound out. All the audio is generated in the browser with the Web Audio API, so it needs no audio files, keys or network.
+**Feel: Present** (formerly Relax; `/relax` redirects to `/present`)
+- **Two full-screen scenes.** Brought over from SoundPal. Open **Present** on the home screen and pick how you feel. *Headache / migraine* plays a singing-bowl drone, and a bell rings each time a golden wheel turns over a starfield. *Anxious / deep sleep* plays ocean swells and a lullaby over a sunken temple, each with its own volume slider, plus a 4-4-4-4 box breathing guide and a sleep timer that dims the screen and fades the sound out. All the audio is generated in the browser with the Web Audio API, so it needs no audio files, keys or network.
+- **A sound library of 37 soundscapes in 8 therapy sections**, organised the way myNoise groups its wellbeing sounds: *Sleep Aid* (waterfall, distant storm, rain on a tent, fireside, box fan, calm lake), *Meditation & Relaxation* (singing bowls, deep chant, temple bells, zen garden, wind harp), *Stress & Anxiety Relief* (healing stream, cat purr, night rain, ocean breath, safe place), *Tinnitus Relief* (summer-night crickets, notched noise tuned to your ringing pitch, white rain, colour noise), *ADHD & Focus*, *Sound Therapy* (binaural beats by brainwave band, isochronic tones, 40 Hz, the nine solfeggio frequencies), *Baby Sleep* (in the womb, shusher, underwater) and *Overcome Low Mood* (marimba garden, sunny morning, morning walk). No recordings are copied: every sound is synthesised live from layers in [lib/present/synth.ts](lib/present/synth.ts). Each sound has a slider per layer, a **Drift** mode that slowly moves the mix, a sleep timer and volume, and your mix is remembered per sound.
 
 **Make: Beat Lab**
 - **A 3D pop-it drum ring.** Five rings of glowing bubbles (kick, snare, clap, open and closed hat) around 16 steps. Tap a bubble to pop it, drag to orbit, tap the core to play. A light wedge sweeps with the playhead and every hit ripples. A step grid underneath mirrors the ring for precise editing, with mute and solo per drum, tempo, swing and volume.
@@ -20,12 +21,15 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 - The drum kit is synthesised live with Web Audio; no samples, keys or network needed.
 
 **Dive deeper**
-- Under **Make Playlist**, a crystal koi hovers over a glowing lotus pond (looping video, 3D koi drawn with three.js, its body bending in a swimming wave). Tap the water to make ripples and startle it; pick **Relax** or **Beat Lab** and the koi dives in before the next page opens. The video and model (about 11 MB together) load only when the card scrolls into view and pause when it's off screen. The pond video, still and koi model are third-party assets loaded from their original hosts.
+- Under **Make Playlist**, a crystal koi hovers over a glowing lotus pond (looping video, 3D koi drawn with three.js, its body bending in a swimming wave). Tap the water to make ripples and startle it; pick **Present**, **Beat Lab** or **Planets** and the koi dives in before the next page opens. The video and model (about 11 MB together) load only when the card scrolls into view and pause when it's off screen. The pond video, still and koi model are third-party assets loaded from their original hosts.
+
+**Play: Sound Planets** (for kids)
+- A circular take on a loop machine. Eight animal planets orbit a smiling sun; each one sings its note every time it crosses the ⭐ music line. Faster and slower orbits drift in and out of step, so kids *see* polyrhythms. Tap a planet to wake it up, tap the sun to play. Notes come from a pentatonic scale so everything sounds nice; pick from six sounds (bell, flute, beep, pluck, drum, shaker), a 🎲 chance to sing and a ✨ wiggle. **Surprise**, three ready-made songs, and **Record** to save your song (shares to Files on iPhone). Keys 1–8 wake planets on a keyboard.
 
 **Everywhere**
 - **Glowy violet theme.** Deep navy-violet night, frosted-glass cards and a periwinkle-to-pink glow, set in Inter Tight with Instrument Serif italic accents and Fira Code labels.
 - **Built for iPhone.** Sound plays even with the silent switch on, the screen stays awake while music plays (iOS stops web audio on auto-lock), audio resumes after calls or app switches, and layouts respect the notch and home indicator.
-- **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon (the watercolour Buddha).
+- **Installs like an app.** In Safari, tap Share, then **Add to Home Screen**. It opens full screen with its own icon: the glowing neon orb from the top of the home screen.
 
 ## How it works
 
@@ -181,10 +185,11 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
 app/
   page.tsx                 iOS-style UI (Photo/Text toggle, results, save/copy)
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
-  relax/                   sound therapy: feeling picker, singing-bowl and sunken-temple scenes
+  present/                 sound therapy: scenes (singing bowl, sunken temple) and the sound library
+  planets/                 Sound Planets, the kids' circular loop machine
   beats/                   Beat Lab: 3D ring stage, step grid, groove model controls
   KoiPortal.tsx            "Dive deeper" koi pond under the Make Playlist button
-  manifest.ts, icon.png    home-screen install; app icon and favicon (Buddha logo)
+  manifest.ts, icon.png    home-screen install; app icon and favicon (neon orb)
 lib/
   understand.ts            Claude search plan: context, hashtags, phrases, tags, seed songs
   caption.ts               image input + Hugging Face backup captioning
@@ -195,10 +200,12 @@ lib/
   spotify.ts               server-side Spotify search
   spotify-auth.ts          browser Spotify login (PKCE) and saving
   therapy/                 Web Audio engines for the bowl drone and ocean + lullaby; iOS audio helpers
+  present/                 sound library: synth layers, catalogue by section, player
+  planets/                 Sound Planets engine: looping voices, beat clock, recorder
   koi/                     the crystal koi: model loading, swim shader, dive
   beatlab/                 drum synth + scheduler, groove model (TensorFlow.js), 3D ring (three.js), patterns
 data/lyrics-index.json     precomputed lyrics index
-public/logo.jpg            in-app logo
+public/logo.jpg            the Buddha artwork used by Present
 scripts/build_index.py     builds the index from the Kaggle CSV
 legacy/                    original 2024 Streamlit app (+ its requirements.txt), Colab notebook, report figures
 ```

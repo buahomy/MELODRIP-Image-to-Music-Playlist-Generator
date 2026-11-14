@@ -1,4 +1,4 @@
-/* Relax (/relax). The picker uses the shared glass theme from globals.css; the
+/* Present (/present), formerly Relax. The picker uses the shared glass theme from globals.css; the
    two scenes are full-window canvases with violet glass controls on top. */
 
 .nav-back {
@@ -459,4 +459,313 @@
   .rx-panel { flex-direction: column; align-items: stretch; }
   .rx-slider input { flex: 1; width: auto; }
   .rx-stat { justify-content: center; flex-wrap: wrap; }
+}
+
+/* ---- Sound library ---- */
+.pl-has-dock {
+  /* room so the last row isn't hidden behind the now-playing dock */
+  padding-bottom: 96px;
+}
+.pl-intro {
+  margin: 0 6px 6px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.pl-section {
+  margin-top: 22px;
+}
+.pl-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 4px 10px;
+}
+.pl-head-emoji {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(170, 150, 255, 0.12);
+  border: 1px solid var(--glass-border);
+  font-size: 20px;
+}
+.pl-head h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+.pl-head p {
+  margin: 1px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.pl-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 152px;
+  gap: 10px;
+  margin: 0 calc(-1 * max(16px, env(safe-area-inset-left)));
+  padding: 4px max(16px, env(safe-area-inset-left)) 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 max(16px, env(safe-area-inset-left));
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.pl-row::-webkit-scrollbar {
+  display: none;
+}
+.pl-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 148px;
+  padding: 14px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+  color: var(--ink);
+  text-align: left;
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.3s, box-shadow 0.3s;
+}
+.pl-tile:active {
+  transform: scale(0.97);
+}
+.pl-tile.active {
+  border-color: rgba(255, 190, 240, 0.55);
+  background: linear-gradient(160deg, rgba(192, 112, 255, 0.32), rgba(255, 143, 216, 0.16));
+  box-shadow: 0 0 0 1px rgba(255, 143, 216, 0.2), 0 14px 40px rgba(190, 90, 255, 0.35);
+}
+.pl-tile-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.pl-tile-emoji {
+  font-size: 30px;
+  line-height: 1;
+}
+.pl-badge {
+  font-size: 14px;
+  opacity: 0.85;
+}
+.pl-tile-name {
+  margin-top: auto;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.pl-tile-blurb {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.pl-scene {
+  border-style: dashed;
+  background: rgba(70, 52, 160, 0.14);
+}
+.pl-eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+.pl-eq i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pink);
+  box-shadow: 0 0 6px var(--pink);
+  animation: pl-eq 0.9s ease-in-out infinite;
+}
+.pl-eq i:nth-child(2) { animation-delay: -0.3s; }
+.pl-eq i:nth-child(3) { animation-delay: -0.6s; }
+@keyframes pl-eq {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+/* now-playing dock */
+.pl-dock {
+  position: fixed;
+  z-index: 40;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  max-width: 536px;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 40px);
+  margin: 0 auto;
+  overflow-y: auto;
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(70, 50, 170, 0.75), rgba(26, 15, 72, 0.85));
+  border: 1px solid rgba(225, 205, 255, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 24px 70px rgba(8, 3, 30, 0.7), 0 0 40px rgba(190, 90, 255, 0.25);
+  -webkit-backdrop-filter: blur(26px) saturate(1.4);
+  backdrop-filter: blur(26px) saturate(1.4);
+  animation: pl-rise 0.4s cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+@keyframes pl-rise {
+  from { transform: translateY(30px); opacity: 0; }
+}
+.pl-dock-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+}
+.pl-dock-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pl-dock-emoji {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 24px;
+}
+.pl-dock-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pl-dock-name {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pl-dock-sec {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pl-dock-mix {
+  flex: none;
+  margin-left: auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 226, 255, 0.3);
+  font-size: 13px;
+  font-weight: 500;
+}
+.pl-dock-play {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--glow);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(190, 90, 255, 0.45);
+  cursor: pointer;
+}
+.pl-dock-play svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.pl-mix {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 16px 18px;
+  border-top: 1px solid var(--line);
+}
+.pl-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-areas: "label out" "input input";
+  gap: 4px 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+.pl-slider span {
+  grid-area: label;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.pl-slider input {
+  grid-area: input;
+  width: 100%;
+  height: 28px;
+  accent-color: var(--pink);
+}
+.pl-slider output {
+  grid-area: out;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: right;
+}
+.pl-tune {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 143, 216, 0.1);
+  border: 1px solid rgba(255, 143, 216, 0.25);
+}
+.pl-tune output {
+  color: var(--pink);
+}
+.pl-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+.pl-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pl-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(230, 226, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.pl-chip.on {
+  border-color: transparent;
+  background: var(--glow);
+  box-shadow: 0 6px 16px rgba(190, 90, 255, 0.35);
 }
