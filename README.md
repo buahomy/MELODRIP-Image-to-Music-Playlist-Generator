@@ -2,6 +2,8 @@
 ### Find music for any moment, unwind with sound therapy, and make beats with AI.
 **Author:** Pure (Yuttanawee Buahom) · **Live app:** [melodrip.vercel.app](https://melodrip.vercel.app) · [Original Streamlit app (2024)](https://melodrip.streamlit.app) · [Original Colab notebook](https://colab.research.google.com/drive/1FV_B7by20IdGuBS1goGFBVbOFCEqbz_E?usp=sharing#scrollTo=e8cozxUzDFgl)
 
+**📽️ Walkthrough deck:** [Melodrip: Feature Tutorials & How I Built It](https://docs.google.com/presentation/d/1144KlMxni9_EKGvId52p83H77lNTnCExXvWbanpXHIk/edit?usp=sharing) (Google Slides: a tutorial for every feature with real screens, plus how it was built with AI tools). The same development story is in [How I built it](#how-i-built-it-development-process-and-ai) below.
+
 Melodrip started as a 2024 hackathon project that matched an image caption against song lyrics (the [original report](#original-hackathon-report-2024) is below). It is now an iPhone home-screen app with four parts: **Find** a playlist for a photo or a few words, **Feel** present with sound therapy, **Make** beats with an on-device AI, and **Play** with Sound Planets, a music toy for kids. For playlists, Claude works out what your photo or text refers to and what people associate with it. The app then searches TikTok and several music services with that context, and Claude picks a playlist you can save to Spotify. Typing "maddy perez" gets you Euphoria's soundtrack and the audios used in Maddy edits, not songs that happen to contain "maddy" or "perez".
 
 ## Features
@@ -185,6 +187,55 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
   - **App:** Next.js 16 (App Router), React 19 and TypeScript.
   - **Beat Lab:** three.js (3D ring, bloom) and TensorFlow.js (groove model), both loaded only on that page.
   - **Server libraries:** `@anthropic-ai/sdk` and `zod` for Claude, and `stemmer` (Porter stemmer) for TextRank keywords.
+
+## How I built it: development process and AI
+
+A one-person project built with AI tools. I set the product direction, wrote the prompts, reviewed every result and decided what shipped; AI coding agents wrote most of the code and tests under that direction. The [walkthrough deck](https://docs.google.com/presentation/d/1144KlMxni9_EKGvId52p83H77lNTnCExXvWbanpXHIk/edit?usp=sharing) has the same story with screens.
+
+### Tools and what I did with each
+
+| Tool | What I used it for |
+|---|---|
+| **Claude Code** (VS Code extension) | My main AI pair: planned each feature against the existing code, wrote the Next.js/TypeScript, ran type checks and production builds, drove the browser tests, committed and shipped. |
+| **Cursor & VS Code** | Editors for reviewing diffs, reading code and making my own edits alongside the agent. |
+| **Next.js 16 · React 19 · TypeScript** | The app: App Router pages, a streaming playlist API, typed audio engines. |
+| **Playwright** | Drove every feature at iPhone size (390 × 844), captured the deck's screenshots, and **measured audio output** for all 37 soundscapes to catch silent or too-loud sounds. |
+| **GitHub + `gh`** | Source of truth. Work lands on the `mess` branch, then merges to `main`. |
+| **Vercel** | Hosting and the API; every push to `main` deploys. |
+| **Claude API** | Inside the app: understands a photo or text, plans the searches, curates the playlist. |
+| **Web Audio API** | Every sound in Present, Beat Lab and Sound Planets is synthesised live (no audio files). |
+| **TensorFlow.js** | Beat Lab's groove model, trained on the phone and saved in the browser. |
+| **three.js** | The 3D drum ring (with bloom) and the crystal koi (with a swimming vertex shader). |
+| **Google AI Studio & Claude artifacts** | Prototypes: SoundPal (sound therapy) began in AI Studio; Beat Lab began as a Claude artifact. Both were ported in, fixed and adapted for iPhone. |
+| **Apify (TikTok), Last.fm, Genius, Deezer, Spotify** | Find candidate songs and save playlists. |
+
+### Workflow
+
+**Prompt → Plan → Build → Test → Ship.** I describe a feature in plain words (often with a link or screenshot); the agent reads the code and proposes how it fits; code lands on `mess`, typed and production-built; Playwright drives it at iPhone size while I review screens and measurements; then it merges to `main` and Vercel deploys. Most features went round this loop several times, because the first build usually had a bug that only testing showed.
+
+### Some of my prompts (real, lightly shortened)
+
+- "integrate the feature of soundpal folder onto melodrip" → Present (sound therapy).
+- "copy this glowy fish, water lotus thing to add below make playlist button … as a gimmick to dive to other features" → the crystal-koi portal.
+- "copy this feature but make it circular make it easy and fun for kids" → Sound Planets.
+- "for all the audios … a little circle icon … 4 elements of earth soil, water, wind, fire inspiring from asoftmurmur.com" → element orbs on every audio.
+- "remember this is for ios app" → a standing rule: silent switch, wake lock, safe areas, 390 px testing.
+
+### How well the AI tools worked
+
+**Well:** speed (whole features such as the Beat Lab port, 37 soundscapes or the mood board in hours, not weeks); breadth (audio synthesis, 3D, machine learning and iOS quirks without my knowing each library first); self-checking when asked (it metered audio, screenshotted every screen and fixed what it found); and judgement on licensing (it declined to copy a copyrighted melody, recordings or a paid template and built originals instead).
+
+**Needed a human, or a test:** first drafts had real bugs that only measurement caught: element textures that were silent when added mid-play, the Beat Lab model stalling because TensorFlow and the 3D ring shared the GPU (fixed by training on the CPU), a 50× loudness gap between soundscapes, hydration mismatches, UI bubbles spilling off screen. It can't hear or see a real iPhone. Problems outside the code needed me: expired API keys and credits, a full disk, pages behind paywalls or logins. And it follows prompts literally, so vague requests need a follow-up.
+
+### Suggestions for future AI use
+
+1. **Name the device and audience first.** "iPhone" and "for kids" changed the design more than any visual note.
+2. **Ask for proof, not promises.** Tests, screenshots and measurements catch what reading code misses.
+3. **Work on a branch and ship small**, so every change is easy to review and undo.
+4. **Keep notes the AI can reuse.** A README and saved preferences carry context between sessions.
+5. **Watch keys, credits and limits.** A health check would have flagged that the Claude key and Apify credit had lapsed (the playlist feature quietly fell back to keyword search).
+6. **Check licences early.** Use references for ideas; build original assets and sounds.
+7. **Test on a real phone regularly**, because no automated test can listen to the audio.
 
 ## Project structure
 ```
