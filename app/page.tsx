@@ -407,7 +407,7 @@ export default function Home() {
           <span className="feature-text">
             <span className="feature-tag">Make</span>
             <span className="feature-title">Beat Lab</span>
-            <span className="feature-sub">Pop a 3D drum ring; an on-device AI fills in the groove</span>
+            <span className="feature-sub">Pop a glowing drum ring; an on-device AI fills in the groove</span>
           </span>
           <Chevron />
         </Link>

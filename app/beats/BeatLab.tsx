@@ -5,12 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BeatEngine } from "@/lib/beatlab/engine";
 import { GrooveModel, type Progress } from "@/lib/beatlab/model";
 import { CORPUS, GENRES, GENRE_BPM, N, STEPS, VOICES, decodeCode, encodeCode } from "@/lib/beatlab/patterns";
-import type { Ring } from "@/lib/beatlab/ring";
+import type { Ring } from "@/lib/beatlab/ring2d";
 import { useWakeLock } from "@/lib/therapy/ios";
 import { ElementDial } from "@/app/ElementDial";
 import { useElementActive } from "@/lib/elements/fx";
 
-// Beat Lab (from SoundPal): a 16-step drum sequencer drawn as a 3D pop-it ring,
+// Beat Lab (from SoundPal): a 16-step drum sequencer drawn as a glowing pop-it ring,
 // with a small neural network, trained on the phone, that completes, varies or
 // dreams up grooves and shows where it expects the next hit.
 
@@ -81,9 +81,9 @@ export default function BeatLab() {
   const ghostTimer = useRef(0);
   const refreshGhosts = useCallback(() => {
     clearTimeout(ghostTimer.current);
-    ghostTimer.current = window.setTimeout(() => {
+    ghostTimer.current = window.setTimeout(async () => {
       if (!model.ready) return;
-      engine.ghosts = model.suggestions(engine.grid, styleRef.current);
+      engine.ghosts = await model.suggestions(engine.grid, styleRef.current);
       rerender();
     }, 60);
   }, [engine, model, rerender]);
@@ -164,7 +164,7 @@ export default function BeatLab() {
     });
 
     let cancelled = false;
-    void import("@/lib/beatlab/ring").then(async ({ createRing }) => {
+    void import("@/lib/beatlab/ring2d").then(async ({ createRing }) => {
       if (cancelled || !sceneRef.current || !tipRef.current) return;
       const r = await createRing(sceneRef.current, tipRef.current, engine, {
         toggle: (i) => toggleRef.current(i),
@@ -200,6 +200,7 @@ export default function BeatLab() {
       cancelled = true;
       off();
       engine.dispose();
+      model.dispose();
       ring.current?.dispose();
       ring.current = null;
     };
@@ -210,15 +211,15 @@ export default function BeatLab() {
   toggleRef.current = toggleCell;
 
   // ---- AI actions ----
-  const complete = useCallback(() => {
-    if (model.ready) applyPattern(model.complete(engine.grid, style, creativity), "Completed your pattern");
+  const complete = useCallback(async () => {
+    if (model.ready) applyPattern(await model.complete(engine.grid, style, creativity), "Completed your pattern");
   }, [applyPattern, creativity, engine, model, style]);
-  const vary = useCallback(() => {
-    if (model.ready) applyPattern(model.vary(engine.grid, style, creativity), "Made a variation");
+  const vary = useCallback(async () => {
+    if (model.ready) applyPattern(await model.vary(engine.grid, style, creativity), "Made a variation");
   }, [applyPattern, creativity, engine, model, style]);
-  const dream = useCallback(() => {
+  const dream = useCallback(async () => {
     if (!model.ready) return;
-    const d = model.dream(style, creativity);
+    const d = await model.dream(style, creativity);
     applyPattern(d.cells, `Dreamed a ${GENRES[d.genre]} groove`, d.bpm);
   }, [applyPattern, creativity, model, style]);
   const clear = useCallback(() => applyPattern(new Float32Array(N), "Cleared the pattern"), [applyPattern]);
@@ -265,16 +266,16 @@ export default function BeatLab() {
         </div>
       </header>
 
-      <main className="bl-stage" aria-label="3D beat ring">
+      <main className="bl-stage" aria-label="Beat ring">
         <div ref={sceneRef} className="bl-scene" />
         <div ref={tipRef} className="bl-tip" hidden />
-        {noGl && <div className="bl-nogl">3D needs WebGL, which is turned off here. The step grid still plays every beat.</div>}
+        {noGl && <div className="bl-nogl">The ring couldn't be drawn here. The step grid still plays every beat.</div>}
         <div className="bl-readout" aria-hidden>
           <span>Step <strong>{String(step + 1).padStart(2, "0")}</strong>/16</span>
           <span><strong>{bpm}</strong> BPM</span>
           <span>Swing <strong>{swingPct}</strong>%</span>
         </div>
-        <p className="bl-hint">Tap a bubble to pop it · drag to orbit · tap the core to play</p>
+        <p className="bl-hint">Tap a bubble to pop it · tap the core to play</p>
       </main>
 
       <aside className="bl-rail" aria-label="Controls">

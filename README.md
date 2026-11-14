@@ -20,8 +20,8 @@ Melodrip started as a 2024 hackathon project that matched an image caption again
 - **A sound library of 37 soundscapes in 8 therapy sections**, organised the way myNoise groups its wellbeing sounds: *Sleep Aid* (waterfall, distant storm, rain on a tent, fireside, box fan, calm lake), *Meditation & Relaxation* (singing bowls, deep chant, temple bells, zen garden, wind harp), *Stress & Anxiety Relief* (healing stream, cat purr, night rain, ocean breath, safe place), *Tinnitus Relief* (summer-night crickets, notched noise tuned to your ringing pitch, white rain, colour noise), *ADHD & Focus*, *Sound Therapy* (binaural beats by brainwave band, isochronic tones, 40 Hz, the nine solfeggio frequencies), *Baby Sleep* (in the womb, shusher, underwater) and *Overcome Low Mood* (marimba garden, sunny morning, morning walk). No recordings are copied: every sound is synthesised live from layers in [lib/present/synth.ts](lib/present/synth.ts). Each sound has a slider per layer, a **Drift** mode that slowly moves the mix, a sleep timer and volume, and your mix is remembered per sound.
 
 **Make: Beat Lab**
-- **A 3D pop-it drum ring.** Five rings of glowing bubbles (kick, snare, clap, open and closed hat) around 16 steps. Tap a bubble to pop it, drag to orbit, tap the core to play. A light wedge sweeps with the playhead and every hit ripples. A step grid underneath mirrors the ring for precise editing, with mute and solo per drum, tempo, swing and volume.
-- **An AI that learns on your phone.** A small neural network (TensorFlow.js) trains on 24 classic grooves in eight styles the first time you open Beat Lab, then is saved on the device. It can **Complete** your pattern, **Vary** it, or **Dream** a new one in a chosen style, and it softly lights the bubbles where it expects the next hit. **Creativity** controls how adventurous it is.
+- **A glowing pop-it drum ring.** Five rings of glowing bubbles (kick, snare, clap, open and closed hat) around 16 steps. Tap a bubble to pop it, tap the core to play. A light wedge sweeps with the playhead and every hit ripples. A step grid underneath mirrors the ring for precise editing, with mute and solo per drum, tempo, swing and volume.
+- **An AI that learns on your phone.** A small neural network (TensorFlow.js) trains on 24 classic grooves in eight styles the first time you open Beat Lab, in a background Web Worker so the beat never stutters, then is saved on the device. It can **Complete** your pattern, **Vary** it, or **Dream** a new one in a chosen style, and it softly lights the bubbles where it expects the next hit. **Creativity** controls how adventurous it is.
 - **Share a beat as text.** Every pattern has a short code (`sp-…`) you can copy, paste and open, or add after `/beats#` in a link.
 - The drum kit is synthesised live with Web Audio; no samples, keys or network needed.
 
@@ -188,7 +188,7 @@ The Claude figures are estimates: about 1,500 input and 800 output tokens per se
 - **Vercel:** hosts the site and runs the API. It's connected to this repository, builds every push to `main` automatically, and stores the production keys. It's free on the Hobby plan, which is for non-commercial projects.
 - **Framework and libraries:**
   - **App:** Next.js 16 (App Router), React 19 and TypeScript.
-  - **Beat Lab:** three.js (3D ring, bloom) and TensorFlow.js (groove model), both loaded only on that page.
+  - **Beat Lab:** TensorFlow.js (groove model, trained in a Web Worker), loaded only on that page. three.js is used only by the koi pond.
   - **Server libraries:** `@anthropic-ai/sdk` and `zod` for Claude, and `stemmer` (Porter stemmer) for TextRank keywords.
 
 ## How I built it: development process and AI
@@ -208,7 +208,7 @@ A one-person project built with AI tools. I set the product direction, wrote the
 | **Claude API** | Inside the app: understands a photo or text, plans the searches, curates the playlist. |
 | **Web Audio API** | Every sound in Present, Beat Lab and Sound Planets is synthesised live (no audio files). |
 | **TensorFlow.js** | Beat Lab's groove model, trained on the phone and saved in the browser. |
-| **three.js** | The 3D drum ring (with bloom) and the crystal koi (with a swimming vertex shader). |
+| **three.js** | The crystal koi (with a swimming vertex shader). Beat Lab's ring started in 3D and moved to 2D canvas for speed. |
 | **Google AI Studio & Claude artifacts** | Prototypes: SoundPal (sound therapy) began in AI Studio; Beat Lab began as a Claude artifact. Both were ported in, fixed and adapted for iPhone. |
 | **Apify (TikTok), Last.fm, Genius, Deezer, Spotify** | Find candidate songs and save playlists. |
 
@@ -247,7 +247,7 @@ app/
   api/playlist/route.ts    the pipeline; streams progress as NDJSON
   present/                 sound therapy: scenes (singing bowl, sunken temple) and the sound library
   planets/                 Sound Planets, the kids' circular loop machine
-  beats/                   Beat Lab: 3D ring stage, step grid, groove model controls
+  beats/                   Beat Lab: glow ring stage, step grid, groove model controls
   KoiPortal.tsx            "Dive deeper" koi pond under the Make Playlist button
   ElementDial.tsx          the element orb (Earth / Water / Wind / Fire) used on every audio
   manifest.ts, icon.png    home-screen install; app icon and favicon (neon orb)
@@ -265,7 +265,7 @@ lib/
   planets/                 Sound Planets engine: looping voices, beat clock, recorder
   elements/                element textures layered over any audio, remembered per audio
   koi/                     the crystal koi: model loading, swim shader, dive
-  beatlab/                 drum synth + scheduler, groove model (TensorFlow.js), 3D ring (three.js), patterns
+  beatlab/                 drum synth + scheduler, groove model (TensorFlow.js, trained in a Web Worker), 2D glow ring, patterns
 data/lyrics-index.json     precomputed lyrics index
 public/logo.jpg            the Buddha artwork used by Present
 scripts/build_index.py     builds the index from the Kaggle CSV
@@ -430,3 +430,6 @@ Shaynak. “Taylor-Swift-Lyrics/Songs.Csv at Main · Shaynak/Taylor-Swift-Lyrics
 
 Sreenivasan, Rithesh. “Text Summarization TextRank Algo Explained , Spacy Pytextrank and Genism Python Example #NLP.” YouTube, October 30, 2020. https://www.youtube.com/watch?v=qtLk2x59Va8. 
 
+## Revision from usability testing
+
+Hands-on testing of Beat Lab surfaced its biggest usability problem: in real time the beat maker felt laggy. Taps on the 3D ring responded late and the beat stuttered, worst in the first minute or two, exactly when a first-time user is deciding whether it's fun (the first task in the test plan: pop four bubbles and play). I made two changes in response. First, I replaced the three.js 3D ring, which redrew a full-screen bloom effect every frame, with a 2D canvas ring that keeps the glow by stamping pre-rendered light sprites with additive blending and drops to a low frame rate when nothing is moving; I also removed drag-to-orbit, so every touch on the ring is a simple tap. Second, I moved the AI groove model (loading TensorFlow.js, training and every prediction) into a Web Worker, so it no longer competes with the drum scheduler and the taps. Measured at iPhone size on a CPU slowed 4× to mimic a phone, the frame rate during startup rose from 14 to 32 fps and holds about 55 fps once the model is ready; without throttling, main-thread freezes during startup dropped from dozens to zero.
